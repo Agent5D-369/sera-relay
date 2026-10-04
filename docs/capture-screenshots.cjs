@@ -40,7 +40,7 @@ const draft = {
     await page.evaluate(d=>window.VoiceReview.update([{id:'demo',busy:false,memory:{draft:d}}]),finished);
     await page.$eval('.vr-scroll',e=>{e.scrollTop=0});await capture('saved');await page.keyboard.press('Escape');
     await page.evaluate(d=>window.VoiceReview.open('thinking',{busy:true,transcript:d.transcript}),draft);await capture('thinking');
-    const files=['local-transcript','review','shared-task','saved','thinking'].map(name=>({file:'screenshots/'+name+'.png',kind:'actual component with synthetic fixtures',source:name==='local-transcript'?'receiver/inline.cjs':'receiver/review-ui.cjs',publicUse:'pending final branding/rights review'}));
+    const files=['local-transcript','review','shared-task','saved','thinking'].map(name=>({file:'screenshots/'+name+'.png',kind:'actual component with synthetic fixtures',source:name==='local-transcript'?'receiver/inline.cjs':'receiver/review-ui.cjs',publicUse:'synthetic demo data; original Sera Relay monogram'}));
     fs.writeFileSync(path.join(out,'capture-manifest.json'),JSON.stringify({captured:'2026-10-04',productionData:false,liveNetworkCalls:false,files},null,2));
     console.log('Captured five product screenshots using synthetic fixtures. No live workspace writes.');
   } finally {await browser.close();}

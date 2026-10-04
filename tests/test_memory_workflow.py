@@ -96,4 +96,3 @@ class WorkflowTests(unittest.TestCase):
         self.memory.send('voice'); self.memory.send('voice')
         self.assertEqual(sum(n == 'publish_voice_memory' for n, _ in Client.calls), 1)
         self.assertFalse(any(n == 'save_document' for n, _ in Client.calls))
-

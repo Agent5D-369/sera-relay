@@ -7,31 +7,31 @@
       "file": "screenshots/local-transcript.png",
       "kind": "actual component with synthetic fixtures",
       "source": "receiver/inline.cjs",
-      "publicUse": "pending final branding/rights review"
+      "publicUse": "synthetic demo data; original Sera Relay monogram"
     },
     {
       "file": "screenshots/review.png",
       "kind": "actual component with synthetic fixtures",
       "source": "receiver/review-ui.cjs",
-      "publicUse": "pending final branding/rights review"
+      "publicUse": "synthetic demo data; original Sera Relay monogram"
     },
     {
       "file": "screenshots/shared-task.png",
       "kind": "actual component with synthetic fixtures",
       "source": "receiver/review-ui.cjs",
-      "publicUse": "pending final branding/rights review"
+      "publicUse": "synthetic demo data; original Sera Relay monogram"
     },
     {
       "file": "screenshots/saved.png",
       "kind": "actual component with synthetic fixtures",
       "source": "receiver/review-ui.cjs",
-      "publicUse": "pending final branding/rights review"
+      "publicUse": "synthetic demo data; original Sera Relay monogram"
     },
     {
       "file": "screenshots/thinking.png",
       "kind": "actual component with synthetic fixtures",
       "source": "receiver/review-ui.cjs",
-      "publicUse": "pending final branding/rights review"
+      "publicUse": "synthetic demo data; original Sera Relay monogram"
     }
   ]
 }
