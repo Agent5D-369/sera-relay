@@ -1,0 +1,47 @@
+name: Bug report
+description: Report a reproducible problem with Sera Relay.
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "Do not include voice notes, transcripts, QR codes, session files, tokens, or workspace credentials. Use synthetic examples."
+  - type: input
+    id: version
+    attributes:
+      label: Sera Relay version
+      placeholder: "2.1.0-beta.1"
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: "List the actions that lead to the problem. Remove private details."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant error text
+      description: "Paste only after removing names, message text, tokens, URLs, and other private data."
+    validations:
+      required: false

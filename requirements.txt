@@ -1,0 +1,7 @@
+process-audio-capture==1.0.0
+psutil==7.2.2
+qrcode==8.2
+Pillow==11.3.0
+numpy==2.3.5
+openai-whisper==20250625
+# Install torch==2.9.1 from https://download.pytorch.org/whl/cpu before this file.

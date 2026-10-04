@@ -1,0 +1,9 @@
+{
+  "name": "whatsapp-local-voice-receiver",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Receive voice notes for local transcription. No sending functionality.",
+  "scripts": { "test": "node --test receiver.test.cjs history.test.cjs compat.test.cjs" },
+  "dependencies": { "whatsapp-web.js": "1.34.7" },
+  "overrides": { "puppeteer": "25.12.0" }
+}

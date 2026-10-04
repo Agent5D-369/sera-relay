@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="title description">
+ <title id="title">Sera Relay: voice notes to memory and action</title>
+ <desc id="description">Original working-brand preview. Local speech transcription with optional Sera memory and shared follow-ups. Private preview.</desc>
+ <rect width="1280" height="640" fill="#111b21"/>
+ <path d="M84 126h72v48H84z M108 150h48v48h-72" fill="none" stroke="#63dec6" stroke-width="12" stroke-linejoin="round"/>
+ <g fill="#e9edef" font-family="Segoe UI,Arial,sans-serif">
+  <text x="192" y="187" font-size="68" font-weight="700">Sera Relay</text>
+  <text x="84" y="286" font-size="42">Voice notes to memory and action.</text>
+  <text x="84" y="345" font-size="24" fill="#b9c6cd">Local transcription. Optional Sera. Shared follow-ups.</text>
+ </g>
+ <g fill="none" stroke="#63dec6" stroke-width="3">
+  <rect x="84" y="406" width="270" height="74" rx="12"/><rect x="448" y="406" width="270" height="74" rx="12"/><rect x="812" y="406" width="360" height="74" rx="12"/>
+  <path d="M371 443h58m-12-10 12 10-12 10 M735 443h58m-12-10 12 10-12 10"/>
+ </g>
+ <g fill="#e9edef" font-family="Segoe UI,Arial,sans-serif" font-size="24" text-anchor="middle">
+  <text x="219" y="452">Received voice note</text><text x="583" y="452">Local text</text><text x="992" y="452">Reviewed memory + tasks</text>
+ </g>
+ <g font-family="Segoe UI,Arial,sans-serif" font-size="20" fill="#b9c6cd"><text x="84" y="578">Windows companion | Working brand | Private preview</text><text x="1172" y="578" text-anchor="end">Agent5D-369</text></g>
+</svg>

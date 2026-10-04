@@ -1,0 +1,37 @@
+{
+  "captured": "2026-10-04",
+  "productionData": false,
+  "liveNetworkCalls": false,
+  "files": [
+    {
+      "file": "screenshots/local-transcript.png",
+      "kind": "actual component with synthetic fixtures",
+      "source": "receiver/inline.cjs",
+      "publicUse": "pending final branding/rights review"
+    },
+    {
+      "file": "screenshots/review.png",
+      "kind": "actual component with synthetic fixtures",
+      "source": "receiver/review-ui.cjs",
+      "publicUse": "pending final branding/rights review"
+    },
+    {
+      "file": "screenshots/shared-task.png",
+      "kind": "actual component with synthetic fixtures",
+      "source": "receiver/review-ui.cjs",
+      "publicUse": "pending final branding/rights review"
+    },
+    {
+      "file": "screenshots/saved.png",
+      "kind": "actual component with synthetic fixtures",
+      "source": "receiver/review-ui.cjs",
+      "publicUse": "pending final branding/rights review"
+    },
+    {
+      "file": "screenshots/thinking.png",
+      "kind": "actual component with synthetic fixtures",
+      "source": "receiver/review-ui.cjs",
+      "publicUse": "pending final branding/rights review"
+    }
+  ]
+}

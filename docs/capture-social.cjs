@@ -1,0 +1,2 @@
+const fs=require('fs'),path=require('path'),puppeteer=require('../receiver/node_modules/puppeteer');
+(async()=>{const b=await puppeteer.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});try{const p=await b.newPage();await p.setViewport({width:1280,height:640});const svg=fs.readFileSync(path.resolve(__dirname,'../assets/sera-relay.svg'),'utf8');await p.setContent('<style>body{margin:0}</style>'+svg);await p.screenshot({path:path.resolve(__dirname,'social-preview.png')});}finally{await b.close()}})();
