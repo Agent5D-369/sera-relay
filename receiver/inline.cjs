@@ -14,7 +14,7 @@ function installPageInline() {
   const states = new Map();
   const panels = new Map();
   const requested = new Set();
-  function openReview(id) { window.VoiceReview.open(id, states.get(id)); }
+  function openReview(id, retry = false) { window.VoiceReview.open(id, states.get(id), retry); }
   const style = document.createElement('style');
   style.textContent = `
   .voice-transcriber,.voice-tools{--vt-bg:#202c33;--vt-ink:#e9edef;--vt-muted:#b9c6cd;--vt-accent:#63dec6;--vt-action:#006b56;--vt-line:#71858f;--vt-font:system-ui,sans-serif;color:var(--vt-ink);font:14px/1.5 var(--vt-font)}
@@ -40,7 +40,7 @@ function installPageInline() {
     const attention = state.status === 'failed' || ['uncertain','review_error'].includes(state.memory?.status) || (!!state.memory?.url && !saved);
     panel.dataset.state = attention ? 'attention' : saved ? 'saved' : state.status === 'done' ? 'transcribed' : 'pending';
     panel.setAttribute('aria-busy', String(!!state.busy || ['downloading','queued','processing'].includes(state.status)));
-    const heading = document.createElement('div'); heading.className = 'vt-heading'; heading.textContent = attention ? (state.memory?.url ? 'Saved · Needs attention' : 'Needs attention') : saved ? 'Saved to Living Memory' : state.status === 'done' ? 'Transcribed · Not saved yet' : 'Voice note to text'; panel.appendChild(heading);
+    const heading = document.createElement('div'); heading.className = 'vt-heading'; heading.textContent = attention ? (state.memory?.url ? 'Saved Â· Needs attention' : 'Needs attention') : saved ? 'Saved to Living Memory' : state.status === 'done' ? 'Transcribed Â· Not saved yet' : 'Voice note to text'; panel.appendChild(heading);
     const button = document.createElement('button');
     button.type = 'button';
     button.textContent = state.status === 'done' ? 'Copy transcript' : state.status === 'failed' ? 'Retry transcription' : ({ downloading: 'Downloading...', queued: 'Queued...', processing: 'Transcribing...' }[state.status] || 'Transcribe');
@@ -70,7 +70,7 @@ function installPageInline() {
       send.style.marginTop = '8px'; send.style.marginRight = '8px';
       send.textContent = ({ disconnected: 'Connect Sera', saved: 'Ask Sera', saving: 'Saving to Living Memory...', advising: 'Asking Sera...', done: 'Saved to Living Memory', uncertain: 'Check Living Memory' })[memory.status] || 'Send to Sera';
       send.disabled = !!state.busy;
-      if (memory.status !== 'disconnected') send.textContent = memory.draft?.verified ? 'View memory & tasks' : 'Review and publish';
+      if (memory.status !== 'disconnected') send.textContent = memory.draft?.verified ? 'View memory & tasks' : memory.status === 'review_error' ? 'Retry Sera review' : memory.status === 'uncertain' ? 'Check saved record' : 'Review and publish';
       if (memory.content_state === 'source_only' && memory.advice && memory.url) { send.textContent = 'Save Sera breakdown'; send.disabled = false; }
       if (memory.content_state === 'analysis_saving') { send.textContent = 'Saving Sera breakdown...'; send.disabled = true; }
       if (memory.content_state === 'analysis_uncertain') { send.textContent = 'Review and verify'; send.disabled = !!state.busy; }
@@ -79,7 +79,7 @@ function installPageInline() {
         if (memory.status !== 'disconnected') send.textContent = 'Preparing Sera breakdown...';
         try {
           if (memory.status === 'disconnected') await window.onSeraConnect();
-          else openReview(id);
+          else openReview(id, ['review_error','uncertain'].includes(memory.status));
         } catch { send.disabled = false; }
         send.disabled = false;
       });
@@ -108,11 +108,11 @@ function installPageInline() {
         panel.append(response);
       }
       if (memory.advice) {
-        const advice = document.createElement('p'); advice.textContent = memory.advice; const d = document.createElement('details'), summary = document.createElement('summary'); summary.textContent = 'Sera’s breakdown'; d.append(summary,advice); panel.appendChild(d);
+        const advice = document.createElement('p'); advice.textContent = memory.advice; const d = document.createElement('details'), summary = document.createElement('summary'); summary.textContent = 'Seraâ€™s breakdown'; d.append(summary,advice); panel.appendChild(d);
       }
     } else if (state.status) {
       const note = document.createElement('small');
-      note.textContent = { downloading: 'Downloading voice note…', queued: 'Waiting for local transcription…', processing: 'Transcribing on this computer…', failed: state.error || 'Transcription failed. Try again.' }[state.status] || '';
+      note.textContent = { downloading: 'Downloading voice noteâ€¦', queued: 'Waiting for local transcriptionâ€¦', processing: 'Transcribing on this computerâ€¦', failed: state.error || 'Transcription failed. Try again.' }[state.status] || '';
       panel.appendChild(note);
     }
   }

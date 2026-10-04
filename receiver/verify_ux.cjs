@@ -26,7 +26,7 @@ const draft = {
       window.VoiceReview.update([{id:'failed',busy:false,memory:{status:'ready'}}]);
     });
     assert.match(await page.$eval('[role=status]',e=>e.textContent),/unexpected response/);
-    assert.equal(await page.$$eval('button',bs=>bs.find(b=>b.textContent==='Refresh preview').disabled),false);
+    assert.equal(await page.$$eval('button',bs=>bs.find(b=>/Refresh preview|Retry Sera review/.test(b.textContent)).disabled),false);
     await page.keyboard.press('Escape');calls.length=0;
     await page.evaluate(() => window.VoiceReview.open('thinking',{busy:true,transcript:'Synthetic speech'}));
     assert.match(await page.$eval('.vr-status-title',e=>e.textContent),/Sera is thinking/);

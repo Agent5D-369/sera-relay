@@ -34,3 +34,11 @@ jobs:
       - name: Run receiver tests
         working-directory: receiver
         run: node --test *.test.cjs
+
+      - name: Review and retry browser regressions
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path build -Force | Out-Null
+          node receiver/verify_inline.cjs
+          node receiver/verify_retry.cjs
+          node receiver/verify_ux.cjs

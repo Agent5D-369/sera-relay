@@ -1,0 +1,19 @@
+'use strict';
+const assert=require('node:assert/strict'),puppeteer=require('puppeteer');
+const {installReviewUI}=require('./review-ui.cjs');
+(async()=>{const b=await puppeteer.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});try{
+ const p=await b.newPage(),calls=[];await p.exposeFunction('onSeraAction',(id,action,values)=>calls.push({id,action,values}));
+ await p.setContent('<body></body>');await p.evaluate(installReviewUI);
+ await p.evaluate(()=>{window.VoiceReview.open('first',{status:'done',transcript:'First transcript'});window.VoiceReview.update([{id:'first',busy:true}]);window.VoiceReview.open('second',{status:'done',transcript:'Second transcript'});});
+ await p.waitForFunction(()=>document.querySelector('textarea').value==='Second transcript');
+ await p.evaluate(()=>window.VoiceReview.update([{id:'first',busy:false,memory:{status:'review_error',error:'Connection timed out'}}]));
+ assert.equal(await p.$eval('textarea',e=>e.value),'Second transcript');assert.doesNotMatch(await p.$eval('[role=status]',e=>e.textContent),/timed out/);
+ await p.evaluate(()=>window.VoiceReview.open('first',{status:'done',transcript:'First transcript',memory:{status:'review_error',error:'Connection timed out'}},true));
+ await p.waitForFunction(()=>document.querySelector('.vr-status-title').textContent==='Sera is thinking');assert.equal(calls.filter(c=>c.id==='first'&&c.action==='prepare').length,2);
+ assert.equal(calls.at(-1).values.transcript,'First transcript');
+ await p.evaluate(()=>window.VoiceReview.update([{id:'first',busy:false,memory:{status:'ready',draft:{title:'First title',transcript:'First transcript',summary:'Ready',claims:[],actions:[],tasks:[]}}}]));
+ assert.doesNotMatch(await p.$eval('[role=status]',e=>e.textContent),/timed out/);
+ await p.evaluate(()=>window.VoiceReview.open('uncertain',{status:'done',transcript:'Saved transcript',memory:{status:'uncertain',draft:{page_id:'a',transcript:'Saved transcript'}}},true));
+ await new Promise(r=>setTimeout(r,100));assert.equal(calls.at(-1).action,'verify');assert.equal(calls.some(c=>c.action==='publish'),false);
+ console.log('PASS: close/open isolation, failed review retry with preserved transcript, cleared error after success, uncertain save verification without republishing.');
+}finally{await b.close()}})().catch(e=>{console.error(e);process.exitCode=1});

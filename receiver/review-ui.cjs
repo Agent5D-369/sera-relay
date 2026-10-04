@@ -47,7 +47,7 @@ function installReviewUI() {
     const changed = !!draft && draft.transcript !== r.transcript.value;
     r.preview.disabled = busy || verified; r.publish.disabled = busy || !draft || changed || verified; r.verify.disabled = busy || !draft;
     r.verify.hidden = !draft?.page_id && !draft?.url && !draft?.duplicate && memory.status !== 'uncertain';
-    r.preview.textContent = changed ? 'Refresh breakdown' : 'Refresh preview';
+    r.preview.textContent = memory.status === 'review_error' || r.error ? 'Retry Sera review' : changed ? 'Refresh breakdown' : 'Refresh preview';
     r.publish.textContent = draft?.duplicate ? 'Use existing memory' : 'Publish memory';
     r.publish.hidden = verified; r.preview.hidden = verified;
     r.title.readOnly = verified; r.transcript.readOnly = verified;
@@ -111,7 +111,7 @@ function installReviewUI() {
     for (const task of draft.tasks || []) { const p = element('p'); p.append(link('Task created: ' + task.title, task.url)); r.contents.append(p); }
   }
   window.VoiceReview = {
-    open(id, state) {
+    open(id, state, retry = false) {
       close(); cache.set(id, state || {});
       const saved = views.get(id), draft = state?.memory?.draft;
       const dialog = element('dialog', '', 'voice-review'); dialog.setAttribute('aria-label', 'Review voice note for Living Memory');
@@ -130,9 +130,12 @@ function installReviewUI() {
       transcript.oninput = () => { remember(); refresh(); }; title.oninput = remember;
       dialog.addEventListener('cancel', e => {e.preventDefault();close();});
       dialog.showModal(); refresh(); x.focus();
-      if (!draft && !state?.busy) void request('prepare',{title:'',transcript:transcript.value});
+      if (!state?.busy && (retry || !draft)) {
+        if (state?.memory?.status === 'uncertain' && draft) void request('verify',{});
+        else void request('prepare',{title:title.value,transcript:transcript.value});
+      }
     },
-    update(entries) { for (const entry of entries) { cache.set(entry.id,entry); if (active?.id === entry.id && !entry.busy) { active.pending = null; if (entry.memory?.error && (!entry.memory.draft || ['review_error','uncertain'].includes(entry.memory.status))) active.error = entry.memory.error; } } refresh(); },
+    update(entries) { for (const entry of entries) { cache.set(entry.id,entry); if (active?.id === entry.id && !entry.busy) { active.pending = null; if (entry.memory?.error && (!entry.memory.draft || ['review_error','uncertain'].includes(entry.memory.status))) active.error = entry.memory.error; else if (entry.memory?.draft && !entry.memory.error) active.error = ''; } } refresh(); },
     dispose() { close(); style.remove(); delete window.VoiceReview; }
   };
 }
