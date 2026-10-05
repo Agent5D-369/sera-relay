@@ -108,11 +108,11 @@ function installPageInline() {
         panel.append(response);
       }
       if (memory.advice) {
-        const advice = document.createElement('p'); advice.textContent = memory.advice; const d = document.createElement('details'), summary = document.createElement('summary'); summary.textContent = 'SeraÃ¢â‚¬â„¢s breakdown'; d.append(summary,advice); panel.appendChild(d);
+        const advice = document.createElement('p'); advice.textContent = memory.advice; const d = document.createElement('details'), summary = document.createElement('summary'); summary.textContent = "Sera's breakdown"; d.append(summary,advice); panel.appendChild(d);
       }
     } else if (state.status) {
       const note = document.createElement('small');
-      note.textContent = { downloading: 'Downloading voice noteÃ¢â‚¬Â¦', queued: 'Waiting for local transcriptionÃ¢â‚¬Â¦', processing: 'Transcribing on this computerÃ¢â‚¬Â¦', failed: state.error || 'Transcription failed. Try again.' }[state.status] || '';
+      note.textContent = { downloading: 'Downloading voice note...', queued: 'Waiting for local transcription...', processing: 'Transcribing on this computer...', failed: state.error || 'Transcription failed. Try again.' }[state.status] || '';
       panel.appendChild(note);
     }
   }
