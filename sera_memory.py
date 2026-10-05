@@ -11,6 +11,10 @@ import urllib.error
 from urllib.parse import urlsplit
 
 
+ANALYSIS_TIMEOUT = 240
+PREVIEW_TIMEOUT = 300
+
+
 class MemoryError(RuntimeError):
     pass
 
@@ -138,7 +142,7 @@ class McpClient:
             headers['Mcp-Session-Id'] = self.session
         req = urllib.request.Request(self.endpoint, json.dumps(payload).encode(), headers)
         try:
-            wait = 90 if params and params.get('name') == 'ask_sera' else 180
+            wait = ANALYSIS_TIMEOUT if params and params.get('name') == 'ask_sera' else 180
             if getattr(self, 'deadline', None):
                 wait = min(wait, self.deadline - time.monotonic())
                 if wait <= 0:
@@ -271,7 +275,7 @@ class SeraMemory:
             client = self.factory(config['endpoint'], config['token'])
             try:
                 if action == 'prepare':
-                    client.deadline = time.monotonic() + 120
+                    client.deadline = time.monotonic() + PREVIEW_TIMEOUT
                 client.start()
                 if 'publish_voice_memory' not in getattr(client, 'tools', set()):
                     raise MemoryError('This connector needs the reviewed voice-memory update.')

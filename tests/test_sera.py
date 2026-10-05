@@ -9,6 +9,30 @@ from sera_memory import SeraMemory, MemoryError, NotWritten, protect, McpClient,
 
 
 class StreamDeadlineTests(unittest.TestCase):
+    def test_analysis_result_can_arrive_after_old_ninety_second_limit(self):
+        response = io.BytesIO(b'data: {"id":1,"result":{}}\n\n')
+        response.headers = {'Content-Type': 'text/event-stream'}
+        with patch('sera_memory.time.monotonic', side_effect=[0, 91, 92]):
+            self.assertEqual(read_mcp_response(response, 1, timeout=240)['id'], 1)
+
+    def test_analysis_has_longer_but_bounded_preview_budget(self):
+        waits = []
+        class Response(io.BytesIO):
+            headers = {'Content-Type': 'application/json'}
+            def __init__(self):
+                super().__init__(b'{"id":1,"result":{}}')
+        class Opener:
+            def open(self, request, timeout):
+                waits.append(timeout)
+                return Response()
+        for remaining, expected in [(300, 240), (45, 45)]:
+            client = McpClient('https://example.com/mcp', 'synthetic')
+            client.opener = Opener()
+            client.deadline = remaining
+            with patch('sera_memory.time.monotonic', return_value=0):
+                client.request('tools/call', {'name':'ask_sera'})
+            self.assertEqual(waits[-1], expected)
+
     def test_keepalives_do_not_extend_deadline(self):
         response = io.BytesIO(b': keepalive\n\n' * 10)
         response.headers = {'Content-Type': 'text/event-stream'}
