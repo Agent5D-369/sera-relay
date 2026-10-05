@@ -116,6 +116,8 @@ const { installReviewUI } = require('./review-ui.cjs');
     assert.deepEqual(requests, ['voice']);
     await page.evaluate(() => { document.querySelector('[data-id="domvoice"]').dataset.id = 'text'; });
     await page.waitForFunction(() => !document.querySelector('[data-id=text] .voice-transcriber'));
+    await page.evaluate(() => window.VoiceTranscriber.update([{id:'sent',status:'done',transcript:'Synthetic transcript',memory:{status:'ready',advice:'Synthetic breakdown'}}]));
+    assert.equal(await page.$eval('[data-voice-message=sent] details summary', el => el.textContent), "Sera's breakdown");
     console.log('PASS: received and sent transcription, safe text, review/edit/publish controls, topic selection, assigned follow-ups, and reused bubbles.');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

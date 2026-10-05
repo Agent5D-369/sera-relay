@@ -26,7 +26,7 @@ Bulk Markdown export is not available. WhatsApp and optional Sera features requi
 
 Download and extract the complete Windows x64 ZIP, then run `Install.cmd`. Setup installs Sera Relay for your Windows account and adds Start menu and Desktop shortcuts. Node.js and the Whisper speech model are bundled. Install FFmpeg separately and make sure `ffmpeg` is on `PATH`, or set `VOICE_FFMPEG` to its executable path. Chrome or Edge is also required.
 
-For failed Sera reviews, apply the [review and record-link patch](https://github.com/Agent5D-369/sera-relay/releases/download/v2.1.0-beta.1/SeraRelay-review-record-patch.2.zip) after installing this beta: close Sera Relay, extract the patch, and run `Install-Retry-Patch.cmd`. It preserves transcripts and credentials.
+For failed Sera reviews, apply the [review and record-link patch](https://github.com/Agent5D-369/sera-relay/releases/download/v2.1.0-beta.1/SeraRelay-review-record-patch.3.zip) after installing this beta: close Sera Relay, extract the patch, and run `Install-Retry-Patch.cmd`. It preserves transcripts and credentials.
 
 ## First use
 
