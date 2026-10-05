@@ -1,6 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict'),puppeteer=require('puppeteer');
 const {installReviewUI}=require('./review-ui.cjs');
+const {installPageInline}=require('./inline.cjs');
 (async()=>{const b=await puppeteer.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});try{
  const p=await b.newPage(),calls=[];await p.exposeFunction('onSeraAction',(id,action,values)=>calls.push({id,action,values}));
  await p.setContent('<body></body>');await p.evaluate(installReviewUI);
@@ -15,5 +16,10 @@ const {installReviewUI}=require('./review-ui.cjs');
  assert.doesNotMatch(await p.$eval('[role=status]',e=>e.textContent),/timed out/);
  await p.evaluate(()=>window.VoiceReview.open('uncertain',{status:'done',transcript:'Saved transcript',memory:{status:'uncertain',draft:{page_id:'a',transcript:'Saved transcript'}}},true));
  await new Promise(r=>setTimeout(r,100));assert.equal(calls.at(-1).action,'verify');assert.equal(calls.some(c=>c.action==='publish'),false);
+ await p.evaluate(()=>{window.VoiceReview.dispose();window.require=()=>({Msg:{get:()=>({type:'ptt',id:{id:'voice'}})}});document.body.append(Object.assign(document.createElement('div'),{innerHTML:'<div data-id=voice></div>'}));window.onVoiceLookup=async()=>{};});
+ await p.evaluate(installReviewUI);await p.evaluate(installPageInline);
+ await p.evaluate(()=>window.VoiceTranscriber.dispose());
+ await p.evaluate(installReviewUI);await p.evaluate(installPageInline);
+ assert.equal(await p.$$eval('.voice-tools',es=>es.length),1);assert.equal(await p.$$eval('.voice-transcriber',es=>es.length),1);
  console.log('PASS: close/open isolation, failed review retry with preserved transcript, cleared error after success, uncertain save verification without republishing.');
 }finally{await b.close()}})().catch(e=>{console.error(e);process.exitCode=1});
