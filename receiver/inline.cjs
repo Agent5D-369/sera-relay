@@ -40,7 +40,7 @@ function installPageInline() {
     const attention = state.status === 'failed' || ['uncertain','review_error'].includes(state.memory?.status) || (!!state.memory?.url && !saved);
     panel.dataset.state = attention ? 'attention' : saved ? 'saved' : state.status === 'done' ? 'transcribed' : 'pending';
     panel.setAttribute('aria-busy', String(!!state.busy || ['downloading','queued','processing'].includes(state.status)));
-    const heading = document.createElement('div'); heading.className = 'vt-heading'; heading.textContent = attention ? (state.memory?.url ? 'Saved Â· Needs attention' : 'Needs attention') : saved ? 'Saved to Living Memory' : state.status === 'done' ? 'Transcribed Â· Not saved yet' : 'Voice note to text'; panel.appendChild(heading);
+    const heading = document.createElement('div'); heading.className = 'vt-heading'; heading.textContent = attention ? (state.memory?.url ? 'Saved Ã‚· Needs attention' : 'Needs attention') : saved ? 'Saved to Living Memory' : state.status === 'done' ? 'Transcribed Ã‚· Not saved yet' : 'Voice note to text'; panel.appendChild(heading);
     const button = document.createElement('button');
     button.type = 'button';
     button.textContent = state.status === 'done' ? 'Copy transcript' : state.status === 'failed' ? 'Retry transcription' : ({ downloading: 'Downloading...', queued: 'Queued...', processing: 'Transcribing...' }[state.status] || 'Transcribe');
@@ -108,11 +108,11 @@ function installPageInline() {
         panel.append(response);
       }
       if (memory.advice) {
-        const advice = document.createElement('p'); advice.textContent = memory.advice; const d = document.createElement('details'), summary = document.createElement('summary'); summary.textContent = 'Seraâ€™s breakdown'; d.append(summary,advice); panel.appendChild(d);
+        const advice = document.createElement('p'); advice.textContent = memory.advice; const d = document.createElement('details'), summary = document.createElement('summary'); summary.textContent = 'SeraÃ¢â‚¬â„¢s breakdown'; d.append(summary,advice); panel.appendChild(d);
       }
     } else if (state.status) {
       const note = document.createElement('small');
-      note.textContent = { downloading: 'Downloading voice noteâ€¦', queued: 'Waiting for local transcriptionâ€¦', processing: 'Transcribing on this computerâ€¦', failed: state.error || 'Transcription failed. Try again.' }[state.status] || '';
+      note.textContent = { downloading: 'Downloading voice noteÃ¢â‚¬Â¦', queued: 'Waiting for local transcriptionÃ¢â‚¬Â¦', processing: 'Transcribing on this computerÃ¢â‚¬Â¦', failed: state.error || 'Transcription failed. Try again.' }[state.status] || '';
       panel.appendChild(note);
     }
   }

@@ -45,10 +45,19 @@ public static class RecordBrowser {
  }
  static INPUT Key(ushort vk,ushort scan,uint flags) { return new INPUT{type=1,u=new UNION{key=new KEY{vk=vk,scan=scan,flags=flags}}}; }
  static bool Send(INPUT[] a) {return SendInput((uint)a.Length,a,Marshal.SizeOf(typeof(INPUT)))==a.Length;}
+ static bool Focus(IntPtr h) {
+  ShowWindow(h,9);SetForegroundWindow(h);
+  for(int i=0;i<10;i++){if(GetForegroundWindow()==h)return true;Thread.Sleep(50);}
+  // This operation follows an explicit record click. Release Alt before changing windows.
+  // Windows otherwise denies a background helper foreground activation and flashes the taskbar.
+  if(!Send(new[]{Key(0x12,0,0),Key(0x12,0,2)}))return false;
+  SetForegroundWindow(h);
+  for(int i=0;i<20;i++){if(GetForegroundWindow()==h)return true;Thread.Sleep(50);}
+  return false;
+ }
  public static bool Open(string url) {
   var h=new IntPtr(Interlocked.Read(ref last));if(!Eligible(h))return false;
-  ShowWindow(h,9);SetForegroundWindow(h);Thread.Sleep(150);
-  if(GetForegroundWindow()!=h)return false;
+  if(!Focus(h))return false;
   if(!Send(new[]{Key(0x11,0,0),Key(0x54,0,0),Key(0x54,0,2),Key(0x11,0,2)}))return false;
   Thread.Sleep(150);if(GetForegroundWindow()!=h)return false;
   var keys=new INPUT[url.Length*2];for(int i=0;i<url.Length;i++){keys[i*2]=Key(0,url[i],4);keys[i*2+1]=Key(0,url[i],6);}
