@@ -45,6 +45,8 @@ class WorkflowTests(unittest.TestCase):
         self.prepare(); draft = self.memory.state('voice')['draft']
         self.assertEqual([c['kind'] for c in draft['claims']], ['Speaker claim', 'Sera inference', 'Institutional memory'])
         self.assertFalse(any(n.startswith('publish') for n, _ in Client.calls))
+        analysis = next(args for name, args in Client.calls if name == 'ask_sera')
+        self.assertTrue(analysis['read_only_review'])
         self.assertEqual(self.inbox.get('voice')['transcript'], 'We should meet Monday.')
     def test_changed_transcript_requires_fresh_preview(self):
         self.prepare()
