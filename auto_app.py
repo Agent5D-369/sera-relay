@@ -161,6 +161,7 @@ class AutoApp:
                 continue
             entry = {key: row[key] for key in ('id', 'status', 'transcript', 'error')}
             entry['busy'] = row['id'] in getattr(self, 'sera_active', set())
+            entry['reviewed'] = bool(row.get('reviewed_at'))
             if hasattr(self, 'sera'):
                 entry['memory'] = self.sera.state(row['id'])
             if identifiers is not None or self.inline_sent.get(row['id']) != entry:
@@ -171,6 +172,17 @@ class AutoApp:
                 self.command({'type': 'inline_states', 'entries': entries})
             except Exception:
                 self.inline_sent.clear()
+        self.inline_summary()
+
+    def inline_summary(self):
+        pending = self.inbox.pending_review_count()
+        if getattr(self, 'inline_pending_sent', None) == pending:
+            return
+        try:
+            self.command({'type': 'inline_summary', 'pending': pending})
+            self.inline_pending_sent = pending
+        except Exception:
+            self.inline_pending_sent = None
 
     def inline_request(self, identifier):
         row = self.inbox.get(identifier)
@@ -458,11 +470,15 @@ class AutoApp:
                     row = self.inbox.get(event['id'])
                     if row:
                         entry = {key: row[key] for key in ('id', 'status', 'transcript', 'error')}
+                        entry['reviewed'] = bool(row.get('reviewed_at'))
                         entry['memory'] = dict(self.sera.state(event['id']), error=event['error'])
                         try:
                             self.command({'type': 'inline_states', 'entries': [entry]})
                         except Exception:
                             pass
+            elif kind == 'inline_reviewed':
+                self.inbox.set_reviewed(event['id'], bool(event.get('reviewed')))
+                self.inline_states([event['id']])
             elif kind == 'inline_lookup':
                 self.inline_states(event['ids'])
             elif kind == 'inline_request':

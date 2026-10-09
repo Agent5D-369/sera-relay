@@ -19,7 +19,7 @@ function installPageInline() {
   style.textContent = `
   .voice-transcriber,.voice-tools{--vt-bg:#202c33;--vt-ink:#e9edef;--vt-muted:#b9c6cd;--vt-accent:#63dec6;--vt-action:#006b56;--vt-line:#71858f;--vt-font:system-ui,sans-serif;color:var(--vt-ink);font:14px/1.5 var(--vt-font)}
   .voice-transcriber{box-sizing:border-box;max-width:560px;margin:8px 12px 12px;padding:12px 14px;border:1px solid var(--vt-line);border-radius:10px;background:var(--incoming-background,var(--vt-bg));white-space:normal;overflow-wrap:anywhere}
-  .voice-transcriber{--vt-attention:#ffd18a;--vt-ready:#9bc7ff}.voice-transcriber[data-state=saved]{border-left:4px solid var(--vt-accent)}.voice-transcriber[data-state=transcribed]{border-left:4px solid var(--vt-ready)}.voice-transcriber[data-state=attention]{border-left:4px solid var(--vt-attention)}.voice-transcriber[data-state=attention] .vt-heading{color:var(--vt-attention)}.voice-transcriber[data-state=transcribed] .vt-heading{color:var(--vt-ready)}
+  .voice-transcriber{--vt-attention:#ffd18a;--vt-ready:#9bc7ff}.voice-transcriber[data-state=saved]{border-left:4px solid var(--vt-accent)}.voice-transcriber[data-state=transcribed]{border-left:4px solid var(--vt-ready)}.voice-transcriber[data-state=attention]{border-left:4px solid var(--vt-attention)}.voice-transcriber[data-state=reviewed]{border-left:4px solid var(--vt-muted)}.voice-transcriber[data-state=reviewed] .vt-heading{color:var(--vt-muted)}.voice-transcriber[data-state=attention] .vt-heading{color:var(--vt-attention)}.voice-transcriber[data-state=transcribed] .vt-heading{color:var(--vt-ready)}
   .voice-transcriber button,.voice-tools button{font:600 13px var(--vt-font);border:1px solid var(--vt-line);border-radius:7px;background:transparent;color:var(--vt-ink);padding:8px 10px;min-height:38px;cursor:pointer;white-space:nowrap;margin:0 6px 6px 0}
   .voice-transcriber button:hover,.voice-tools button:hover{border-color:var(--vt-accent)}.voice-transcriber button:focus-visible,.voice-tools button:focus-visible,.voice-transcriber summary:focus-visible{outline:2px solid var(--vt-accent);outline-offset:3px}.voice-transcriber button:active{transform:translateY(1px)}.voice-transcriber button:disabled{opacity:.6;cursor:default}.voice-transcriber .vt-primary{background:var(--vt-action);border-color:var(--vt-action)}
   .voice-transcriber p{margin:8px 0 12px;white-space:pre-wrap;overflow-wrap:anywhere;user-select:text}.voice-transcriber small{display:block;margin:6px 0;color:var(--vt-muted)}.voice-transcriber a{color:var(--vt-accent);display:inline-block;margin:8px 12px 0 0}.voice-transcriber summary{cursor:pointer;padding:6px 0;font-weight:600}.voice-transcriber .vt-heading{font-size:12px;font-weight:600;letter-spacing:.02em;margin:0 0 10px;color:var(--vt-accent)}
@@ -38,9 +38,10 @@ function installPageInline() {
     panel.replaceChildren();
     const saved = !!state.memory?.draft?.verified || (state.memory?.status === 'done' && state.memory?.url && state.memory?.content_state === 'complete');
     const attention = state.status === 'failed' || ['uncertain','review_error'].includes(state.memory?.status) || (!!state.memory?.url && !saved);
-    panel.dataset.state = attention ? 'attention' : saved ? 'saved' : state.status === 'done' ? 'transcribed' : 'pending';
+    const reviewed = !!state.reviewed && state.status === 'done' && !saved && !attention;
+    panel.dataset.state = attention ? 'attention' : saved ? 'saved' : reviewed ? 'reviewed' : state.status === 'done' ? 'transcribed' : 'pending';
     panel.setAttribute('aria-busy', String(!!state.busy || ['downloading','queued','processing'].includes(state.status)));
-    const heading = document.createElement('div'); heading.className = 'vt-heading'; heading.textContent = attention ? (state.memory?.url ? 'Saved \u00b7 Needs attention' : 'Needs attention') : saved ? 'Saved to Living Memory' : state.status === 'done' ? 'Transcribed \u00b7 Not saved yet' : 'Voice note to text'; panel.appendChild(heading);
+    const heading = document.createElement('div'); heading.className = 'vt-heading'; heading.textContent = attention ? (state.memory?.url ? 'Saved \u00b7 Needs attention' : 'Needs attention') : saved ? 'Saved to Living Memory' : reviewed ? 'Reviewed \u00b7 Not saved' : state.status === 'done' ? 'Transcribed \u00b7 Not saved yet' : 'Voice note to text'; panel.appendChild(heading);
     const button = document.createElement('button');
     button.type = 'button';
     button.textContent = state.status === 'done' ? 'Copy transcript' : state.status === 'failed' ? 'Retry transcription' : ({ downloading: 'Downloading...', queued: 'Queued...', processing: 'Transcribing...' }[state.status] || 'Transcribe');
@@ -84,6 +85,17 @@ function installPageInline() {
         send.disabled = false;
       });
       send.className = 'vt-primary'; panel.appendChild(send);
+      if (!saved) {
+        const mark = document.createElement('button'); mark.type = 'button'; mark.style.marginTop = '8px';
+        mark.textContent = state.reviewed ? 'Unmark reviewed' : 'Mark reviewed';
+        mark.title = 'Only on this computer. Nothing is sent to Sera.';
+        mark.addEventListener('click', async event => {
+          event.stopPropagation(); mark.disabled = true;
+          states.set(id, { ...state, reviewed: !state.reviewed }); render(id, panel);
+          try { await window.onVoiceReviewed(id, !state.reviewed); } catch { states.set(id, state); render(id, panel); }
+        });
+        panel.appendChild(mark);
+      }
       const note = document.createElement('small');
       note.textContent = memory.error || (memory.status === 'ready' ? 'Sends this transcript and its source details to Amora Living Memory.' : '');
       panel.appendChild(note);
@@ -147,6 +159,8 @@ function installPageInline() {
       if (panels.has(entry.id) && JSON.stringify(previous) !== JSON.stringify(entry)) render(entry.id, panels.get(entry.id));
     }
     window.VoiceReview.update(entries);
+  }, summary(pending) {
+    toolsTitle.textContent = pending > 0 ? 'Voice notes + Sera \u00b7 ' + pending + ' to review' : 'Voice notes + Sera';
   }, scan, dispose() { document.removeEventListener('click', recordClick, true); observer.disconnect(); clearTimeout(timer); for (const panel of panels.values()) panel.remove(); style.remove(); tools.remove(); window.VoiceReview?.dispose(); delete window.VoiceTranscriber; } };
   let timer;
   const observer = new MutationObserver(() => { clearTimeout(timer); timer = setTimeout(scan, 150); });
@@ -164,6 +178,9 @@ async function installInline(client, emit, openExternal) {
   });
   if (!await client.pupPage.evaluate(() => typeof window.onVoiceTranscribe === 'function')) await client.pupPage.exposeFunction('onVoiceTranscribe', id => {
     if (typeof id === 'string' && id.length <= 1024) emit({ type: 'inline_request', id });
+  });
+  if (!await client.pupPage.evaluate(() => typeof window.onVoiceReviewed === 'function')) await client.pupPage.exposeFunction('onVoiceReviewed', (id, reviewed) => {
+    if (typeof id === 'string' && id.length <= 1024) emit({ type: 'inline_reviewed', id, reviewed: !!reviewed });
   });
   if (!await client.pupPage.evaluate(() => typeof window.onVoiceLookup === 'function')) await client.pupPage.exposeFunction('onVoiceLookup', ids => {
     if (Array.isArray(ids)) emit({ type: 'inline_lookup', ids: ids.filter(id => typeof id === 'string' && id.length <= 1024).slice(0, 200) });

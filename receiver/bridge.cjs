@@ -130,6 +130,10 @@ readline.createInterface({ input: process.stdin }).on('line', async line => {
       await client.pupPage.evaluate(entries => window.VoiceTranscriber?.update(entries), command.entries);
       return;
     }
+    if (command.type === 'inline_summary' && inline && Number.isInteger(command.pending)) {
+      await client.pupPage.evaluate(pending => window.VoiceTranscriber?.summary(pending), command.pending);
+      return;
+    }
     if (command.type === 'inline_download' && inline && typeof command.id === 'string') {
       const message = await client.getMessageById(command.id);
       if (message && message.type === 'ptt') await incoming.receive(message, true);
