@@ -20,8 +20,12 @@ $setup = Join-Path ([IO.Path]::GetTempPath()) $name
 Write-Host ("Downloading Sera Relay {0} ({1:N0} MB). This can take a few minutes..." -f $release.tag_name, ($asset.size / 1MB))
 Invoke-WebRequest $asset.browser_download_url -OutFile $setup -UseBasicParsing -Headers $headers
 if ($sums) {
-  $expected = ((Invoke-WebRequest $sums.browser_download_url -UseBasicParsing -Headers $headers).Content -split "`n" |
-    Where-Object { $_ -match [regex]::Escape($name) } | Select-Object -First 1) -replace '\s.*$', ''
+  # GitHub serves the checksum file as binary, so save it and read it as text.
+  $sumsFile = Join-Path ([IO.Path]::GetTempPath()) 'SeraRelay-SHA256SUMS.txt'
+  Invoke-WebRequest $sums.browser_download_url -OutFile $sumsFile -UseBasicParsing -Headers $headers
+  $expected = ((Get-Content -LiteralPath $sumsFile) | Where-Object { $_ -match [regex]::Escape($name) } |
+    Select-Object -First 1) -replace '\s.*$', ''
+  Remove-Item -LiteralPath $sumsFile -Force
   $actual = (Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash
   if (-not $expected -or $actual -ne $expected.Trim().ToUpperInvariant()) {
     Remove-Item -LiteralPath $setup -Force
