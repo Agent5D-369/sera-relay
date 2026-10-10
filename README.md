@@ -16,7 +16,7 @@ Screenshots use fictional demo data.
 
 ## Install
 
-You need Google Chrome or Microsoft Edge installed. Sera Relay is free and open source. It is a beta and is not yet code-signed, so your computer asks you to confirm the first time. The steps below show exactly what to click.
+You need Google Chrome or Microsoft Edge installed, and about 2 GB of free space. The download is around 600 MB because the speech model is included, so nothing else needs to be installed. Sera Relay is free and open source. It is a beta and is not yet code-signed, so your computer asks you to confirm the first time. The steps below show exactly what to click.
 
 ### Windows 10 or 11 (64-bit)
 
