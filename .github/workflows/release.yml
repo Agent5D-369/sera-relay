@@ -1,0 +1,179 @@
+name: Release
+
+# Builds both installers on clean machines, installs and smoke-tests each one, then drafts a release.
+# A person reviews the draft and publishes it. Publishing is never automatic.
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+env:
+  CI: 'true'
+  SPEECH: Hello team. Please send the water report to the land stewards before Friday.
+
+jobs:
+  windows:
+    name: Windows installer
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24.13.0'
+      - name: Install build dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.9.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -r requirements-build.txt
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) { choco install innosetup --yes --no-progress }
+      - name: Install receiver dependencies
+        working-directory: receiver
+        run: npm ci --ignore-scripts
+      - name: Fetch the Whisper model
+        run: python -c "import whisper; assert whisper.load_model('small') is not None"
+      - name: Run tests
+        run: python -m unittest discover -s tests -v
+      - name: Build portable folder and installer
+        shell: pwsh
+        run: .\Build-Release.ps1 -PythonPath (Get-Command python).Source
+      - name: Install, smoke-test, and uninstall like a user would
+        shell: pwsh
+        run: |
+          Add-Type -AssemblyName System.Speech
+          $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer
+          $synth.SetOutputToWaveFile("$PWD\build\speech.wav"); $synth.Speak($env:SPEECH); $synth.Dispose()
+          python tests/make_voice_note.py build\speech.wav build\note.ogg
+          $setup = Start-Process dist\SeraRelay-Windows-Setup.exe -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/TASKS=desktopicon' -Wait -PassThru
+          if ($setup.ExitCode) { throw "Setup exited with $($setup.ExitCode)" }
+          $app = "$env:LOCALAPPDATA\SeraRelay\SeraRelay.exe"
+          if (-not (Test-Path $app)) { throw 'App was not installed' }
+          foreach ($folder in @([Environment]::GetFolderPath('Programs'), [Environment]::GetFolderPath('Desktop'))) {
+            if (-not (Test-Path (Join-Path $folder 'Sera Relay.lnk'))) { throw "Missing shortcut in $folder" }
+          }
+          # Prove voice notes decode with no FFmpeg anywhere on PATH.
+          $env:PATH = ($env:PATH -split ';' | Where-Object { $_ -and -not (Test-Path (Join-Path $_ 'ffmpeg.exe')) }) -join ';'
+          Remove-Item Env:VOICE_FFMPEG -ErrorAction SilentlyContinue
+          $report = "$PWD\build\self-test.json"
+          Start-Process $app -ArgumentList '--self-test','--audio',"$PWD\build\note.ogg",'--report',$report -Wait
+          $result = Get-Content $report -Raw | ConvertFrom-Json
+          $result | ConvertTo-Json
+          if ($result.error) { throw $result.error }
+          if ($result.transcript -notmatch 'water report') { throw "Unexpected transcript: $($result.transcript)" }
+          if ($result.decoder -notmatch 'libsndfile') { throw 'Decoder check failed' }
+          $remove = Start-Process "$env:LOCALAPPDATA\SeraRelay\unins000.exe" -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
+          if ($remove.ExitCode) { throw "Uninstall exited with $($remove.ExitCode)" }
+          Start-Sleep -Seconds 3
+          if (Test-Path $app) { throw 'Uninstall left the app behind' }
+          if (Test-Path (Join-Path ([Environment]::GetFolderPath('Programs')) 'Sera Relay.lnk')) { throw 'Uninstall left the Start menu shortcut' }
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: windows
+          path: |
+            dist/SeraRelay-Windows-Setup.exe
+            dist/SeraRelay-Windows-x64-portable.zip
+            build/self-test.json
+          if-no-files-found: error
+          retention-days: 7
+
+  macos:
+    name: macOS app (Apple Silicon)
+    runs-on: macos-14
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24.13.0'
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch==2.9.1
+          python -m pip install -r requirements-build.txt
+      - name: Install receiver dependencies
+        working-directory: receiver
+        run: npm ci --ignore-scripts
+      - name: Fetch the Whisper model
+        run: python -c "import whisper; assert whisper.load_model('small') is not None"
+      - name: Run tests
+        run: python -m unittest discover -s tests -v
+      - name: Build app, DMG, and ZIP
+        run: PYTHON=python bash build-macos.sh
+      - name: Install from the ZIP and smoke-test like a user would
+        run: |
+          mkdir -p build
+          say -o build/speech.aiff "$SPEECH"
+          python tests/make_voice_note.py build/speech.aiff build/note.ogg
+          mkdir -p "$HOME/Applications"
+          ditto -x -k dist/SeraRelay-macOS.zip "$HOME/Applications"
+          app="$HOME/Applications/Sera Relay.app"
+          codesign --verify --deep --strict "$app"
+          # Prove voice notes decode with no FFmpeg anywhere on PATH.
+          clean_path="$(echo "$PATH" | tr ':' '\n' | while read -r d; do [ -n "$d" ] && [ ! -x "$d/ffmpeg" ] && echo "$d"; done | paste -sd: -)"
+          env -u VOICE_FFMPEG PATH="$clean_path" "$app/Contents/MacOS/SeraRelay" --self-test --audio "$PWD/build/note.ogg" --report "$PWD/build/self-test.json"
+          cat build/self-test.json
+          python - <<'EOF'
+          import json
+          result = json.load(open('build/self-test.json'))
+          assert 'error' not in result, result
+          assert 'water report' in result['transcript'].lower(), result
+          assert result['decoder'].startswith('libsndfile'), result
+          assert result['platform'] == 'darwin', result
+          EOF
+          hdiutil attach dist/SeraRelay-macOS.dmg -nobrowse -mountpoint /tmp/sera-dmg
+          test -d "/tmp/sera-dmg/Sera Relay.app" && test -L /tmp/sera-dmg/Applications
+          hdiutil detach /tmp/sera-dmg
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: macos
+          path: |
+            dist/SeraRelay-macOS.dmg
+            dist/SeraRelay-macOS.zip
+            build/self-test.json
+          if-no-files-found: error
+          retention-days: 7
+
+  draft:
+    name: Draft release
+    needs: [windows, macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          path: artifacts
+      - name: Create checksums and draft the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="$(python3 -c 'from platform_support import VERSION; print(VERSION)')"
+          tag="v$version"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $tag already exists. Raise VERSION in platform_support.py first." >&2; exit 1
+          fi
+          mkdir upload
+          cp artifacts/windows/dist/* artifacts/macos/dist/* upload/
+          python3 - "$version" <<'EOF'
+          import json, os, sys
+          info = {'product': 'Sera Relay', 'version': sys.argv[1], 'repository': os.environ['GITHUB_REPOSITORY'],
+                  'git_sha': os.environ['GITHUB_SHA'], 'unsigned': True,
+                  'windows_self_test': json.load(open('artifacts/windows/build/self-test.json')),
+                  'macos_self_test': json.load(open('artifacts/macos/build/self-test.json'))}
+          json.dump(info, open('upload/BUILD-INFO.json', 'w'), indent=2)
+          EOF
+          (cd upload && sha256sum SeraRelay-* > SHA256SUMS.txt && cat SHA256SUMS.txt)
+          gh release create "$tag" upload/* \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --draft \
+            --title "Sera Relay $version for Windows and Mac" \
+            --notes-file docs/RELEASE-NOTES.md

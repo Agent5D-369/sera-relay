@@ -8,7 +8,8 @@ function allowedRecord(url) {
 // Keep the exact native window, rather than guessing a profile from chrome.exe.
 // Multiple signed-in profiles can share one Chrome browser process.
 function startExternal(excludedPid) {
-  if (process.platform !== 'win32') throw Error('External browser routing requires Windows.');
+  if (process.platform === 'darwin') return startMacExternal();
+  if (process.platform !== 'win32') throw Error('External browser routing requires Windows or macOS.');
   if (!Number.isSafeInteger(excludedPid)) throw Error('Companion browser process unavailable.');
   const script = `
 Add-Type -TypeDefinition @'
@@ -91,6 +92,20 @@ while ($null -ne ($recordLine = [Console]::ReadLine())) {
       return new Promise(resolve=>{const timer=setTimeout(()=>{if(pending){pending=null;resolve(false);}},5000);pending=value=>{clearTimeout(timer);resolve(value);};child.stdin.write(JSON.stringify(url)+'\n');});
     },
     close(){child.stdin.end();child.kill();}
+  };
+}
+// macOS: hand the record link to the default browser, which keeps the person's own signed-in profile.
+function startMacExternal() {
+  return {
+    async open(url) {
+      if (!allowedRecord(url)) return false;
+      return new Promise(resolve => {
+        const child = spawn('/usr/bin/open', [url], { stdio: 'ignore' });
+        child.on('error', () => resolve(false));
+        child.on('exit', code => resolve(code === 0));
+      });
+    },
+    close() {},
   };
 }
 module.exports = { allowedRecord, startExternal };

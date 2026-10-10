@@ -1,6 +1,4 @@
 """Sera MCP client and durable receipts. Credentials never enter WhatsApp's page."""
-import ctypes
-from ctypes import wintypes
 import datetime
 import json
 import time
@@ -9,6 +7,8 @@ import threading
 import urllib.request
 import urllib.error
 from urllib.parse import urlsplit
+
+import platform_support
 
 
 ANALYSIS_TIMEOUT = 240
@@ -24,18 +24,10 @@ class NotWritten(MemoryError):
 
 
 def protect(data, decrypt=False):
-    class Blob(ctypes.Structure):
-        _fields_ = [('size', wintypes.DWORD), ('data', ctypes.POINTER(ctypes.c_byte))]
-    buffer = ctypes.create_string_buffer(data)
-    source = Blob(len(data), ctypes.cast(buffer, ctypes.POINTER(ctypes.c_byte)))
-    target = Blob()
-    function = ctypes.windll.crypt32.CryptUnprotectData if decrypt else ctypes.windll.crypt32.CryptProtectData
-    if not function(ctypes.byref(source), None, None, None, None, 1, ctypes.byref(target)):
-        raise MemoryError('Windows could not unlock the Sera credential. Connect Sera again.')
     try:
-        return ctypes.string_at(target.data, target.size)
-    finally:
-        ctypes.windll.kernel32.LocalFree(target.data)
+        return platform_support.protect(data, decrypt)
+    except platform_support.CredentialError as error:
+        raise MemoryError(str(error)) from None
 
 
 def validate_endpoint(endpoint):

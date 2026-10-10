@@ -1,9 +1,8 @@
 # Start with Sera Relay
 
-1. Install FFmpeg and ensure `ffmpeg` is available on `PATH`, or set `VOICE_FFMPEG` to the full path to its executable.
-2. Download the [Sera Relay 2.1.0-beta.1 Windows x64 ZIP](https://github.com/Agent5D-369/sera-relay/releases/tag/v2.1.0-beta.1), extract the complete ZIP, and run `Install.cmd`.
-3. Open Sera Relay from the Desktop or Start menu and link WhatsApp using the QR instructions.
-4. To use Sera, open Settings and enter your own compatible workspace MCP URL and token. Your Sera administrator supplies a token with document-write permission and the reviewed voice-memory integration.
-5. Select a voice note, transcribe it, and review the proposed memory and tasks before saving.
+1. Install Sera Relay. Windows: run `SeraRelay-Windows-Setup.exe`. Mac (Apple Silicon): paste `curl -fsSL https://raw.githubusercontent.com/Agent5D-369/sera-relay/main/install.sh | bash` into Terminal. The [README](README.md#install) shows each click, including the one-time security confirmation for this unsigned beta.
+2. Open Sera Relay and link WhatsApp: on your phone, WhatsApp > Settings > Linked devices > Link a device, then scan the QR code.
+3. Open a chat. Each voice note gets a panel with its transcript. Select **Transcribe** on older notes.
+4. Optional: to use Sera, select **Connect Sera** under a transcript and enter your workspace's MCP URL and a token with document-write access. Then select **Review and publish** on a note.
 
-Speech recognition runs locally using the bundled Whisper model. Previewing sends the selected note to your Sera workspace for analysis; saving publishes it there. AI usage follows your workspace's billing arrangement. Chrome or Edge is required. See [DEPLOYMENT.md](DEPLOYMENT.md) for data storage, source builds, and additional requirements.
+Speech recognition runs on your computer with the bundled Whisper model. Nothing else needs to be installed except Chrome or Edge. Previewing sends the selected note to your Sera workspace for analysis; publishing saves it there. See [DEPLOYMENT.md](DEPLOYMENT.md) for data storage and source builds.

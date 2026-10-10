@@ -8,4 +8,4 @@ By submitting a contribution, you agree it may be distributed under the project'
 
 ## Local development
 
-The Windows release bundles Node.js and the Whisper model. Chrome or Edge and separately installed FFmpeg are prerequisites for using transcription. See [DEPLOYMENT.md](DEPLOYMENT.md) for source build setup and commands. Do not publish builds or claim an official release from an unreviewed branch.
+Releases bundle Node.js, the Whisper model, and the audio decoder. Chrome or Edge is the only prerequisite. See [DEPLOYMENT.md](DEPLOYMENT.md) for source build setup and commands. Do not publish builds or claim an official release from an unreviewed branch.
