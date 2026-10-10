@@ -18,7 +18,13 @@ import qrcode
 from PIL import ImageTk
 
 from app import kernel32, user32
-from engine import Transcriber
+from engine import SilentAudio, Transcriber
+
+
+def silent_note_message(identifier):
+    sent = identifier.startswith("true_")
+    return ("This voice note is silent: no sound was recorded, so there is nothing to transcribe. "
+            + ("Play it in WhatsApp to check, and re-record it if your microphone was off." if sent else "Play it in WhatsApp to check."))
 from inbox_store import Inbox
 from sera_memory import SeraMemory
 
@@ -221,7 +227,7 @@ class AutoApp:
         window.geometry('650x340')
         frame = ttk.Frame(window, padding=20)
         frame.pack(fill='both', expand=True)
-        ttk.Label(frame, text='Amora MCP URL').pack(anchor='w')
+        ttk.Label(frame, text='Sera MCP URL').pack(anchor='w')
         endpoint = ttk.Entry(frame)
         endpoint.pack(fill='x', pady=(4, 12))
         endpoint.insert(0, '')
@@ -314,6 +320,9 @@ class AutoApp:
                 if audio.parent != self.inbox.spool or not audio.is_file():
                     raise RuntimeError("The downloaded voice note is missing. Select Retry to download it again.")
                 self.inbox.complete(row["id"], self.model.transcribe(audio))
+            except SilentAudio:
+                # The download is complete but the recording itself has no sound; retrying cannot help.
+                self.inbox.fail(row["id"], silent_note_message(row["id"]))
             except Exception as error:
                 self.inbox.fail(row["id"], error)
             self.events.put({"type": "changed"})

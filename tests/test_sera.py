@@ -186,6 +186,14 @@ class SeraTests(unittest.TestCase):
         FakeClient.denied = False
         self.memory.send('voice')
         self.assertEqual(self.memory.state('voice')['status'], 'done')
+    def test_tool_errors_show_seras_reason(self):
+        client = McpClient('https://example.com/mcp', 'synthetic')
+        client.request = lambda *a, **k: {'isError': True, 'content': [{'type': 'text', 'text': 'owner_id is required'}]}
+        with self.assertRaisesRegex(Exception, 'Sera could not complete this step: owner_id is required'):
+            client.call('create_voice_task', {})
+        client.request = lambda *a, **k: {'isError': True, 'content': []}
+        with self.assertRaisesRegex(Exception, 'document-write access'):
+            client.call('create_voice_task', {})
     def test_mcp_session_headers_and_handshake(self):
         requests = []
         class Response:

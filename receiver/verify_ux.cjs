@@ -52,7 +52,9 @@ const draft = {
     await page.click('[data-task]');
     await page.click('[data-owner=alex]');
     await page.$eval('[type=date]',e=>{e.value='2026-10-10';e.dispatchEvent(new Event('input'))});
-    assert.equal(await page.$$eval('button',bs=>bs.find(b=>b.textContent==='Create shared tasks').disabled),true);
+    // Before the memory exists, a checked follow-up rides along with Publish instead of a separate step.
+    assert.equal(await page.$$eval('button',bs=>bs.find(b=>b.textContent==='Create shared tasks').hidden),true);
+    assert.equal(await page.$$eval('button',bs=>{const p=bs.find(b=>b.textContent.startsWith('Publish memory'));return p.textContent+'|'+p.disabled}),'Publish memory + create 1 task|false');
     await page.evaluate(d=>window.VoiceReview.update([{id:'planning',busy:false,memory:{draft:{...d,verified:true}}}]),draft);
     assert.equal(await page.$eval('[data-task]',e=>e.checked),true);
     assert.equal(await page.$eval('[data-owner=alex]',e=>e.checked),true);

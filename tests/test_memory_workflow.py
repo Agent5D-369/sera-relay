@@ -82,6 +82,42 @@ class WorkflowTests(unittest.TestCase):
         self.assertFalse(any(n == 'create_voice_task' for n, _ in Client.calls))
         self.memory.action('voice', 'tasks', {'selection': [{'index': 0, 'owner_id': OWNER, 'due_date': '2026-10-10'}]})
         self.assertEqual(len(self.memory.state('voice')['draft']['tasks']), 1)
+    def test_publish_creates_selected_tasks_in_the_same_step(self):
+        self.prepare()
+        self.memory.action('voice', 'publish', {'selection': [{'index': 0, 'owner_ids': [OWNER], 'due_date': '2026-10-23'}]})
+        state = self.memory.state('voice')
+        self.assertEqual(state['status'], 'done'); self.assertEqual(len(state['draft']['tasks']), 1)
+        self.assertEqual(state['error'], 'Memory saved. 1 task created.')
+        names = [n for n, _ in Client.calls]
+        self.assertLess(names.index('publish_voice_memory'), names.index('create_voice_task'))
+    def test_failed_task_never_downgrades_a_saved_memory(self):
+        self.prepare(); self.memory.action('voice', 'publish', {})
+        original = Client.call
+        def failing(client, name, args):
+            if name == 'create_voice_task': raise RuntimeError('owner_id is required')
+            return original(client, name, args)
+        Client.call = failing
+        try:
+            with self.assertRaisesRegex(RuntimeError, 'Memory saved. Could not create the task: owner_id is required'):
+                self.memory.action('voice', 'tasks', {'selection': [{'index': 0, 'owner_ids': [OWNER], 'due_date': '2026-10-23'}]})
+        finally:
+            Client.call = original
+        state = self.memory.state('voice')
+        self.assertEqual(state['status'], 'done'); self.assertTrue(state['draft']['verified']); self.assertTrue(state['url'])
+    def test_reopening_a_published_memory_never_reanalyzes_it(self):
+        self.prepare(); self.memory.action('voice', 'publish', {})
+        before = self.memory.state('voice')['draft']; Client.calls = []
+        self.prepare()
+        self.assertFalse(any(n == 'ask_sera' for n, _ in Client.calls))
+        after = self.memory.state('voice')
+        self.assertEqual(after['draft'], before); self.assertEqual(after['status'], 'done')
+    def test_startup_heals_saved_memories_marked_as_review_errors(self):
+        self.prepare(); self.memory.action('voice', 'publish', {})
+        with self.inbox.connect() as db:
+            db.execute("UPDATE memory_receipts SET status='review_error', error='Sera could not complete this step. Verify document-write access in your Sera workspace.'")
+        SeraMemory(self.inbox, Client)
+        state = self.memory.state('voice')
+        self.assertEqual(state['status'], 'done'); self.assertIn('Memory saved', state['error'])
     def test_non_notion_links_are_rejected(self):
         self.assertIsNone(record_id('https://evil.example/' + PAGE))
     def test_multiple_assignees_create_one_shared_task(self):

@@ -3,8 +3,11 @@ from pathlib import Path
 import os
 import sys
 import subprocess
-import shutil
 import numpy as np
+
+
+class SilentAudio(RuntimeError):
+    """The audio decoded fine but holds no sound, so there is nothing to transcribe."""
 
 
 def load_audio(path: Path) -> np.ndarray:
@@ -18,12 +21,12 @@ def load_audio(path: Path) -> np.ndarray:
         raise RuntimeError("The audio could not be read. Try opening a saved voice message instead.")
     audio = np.frombuffer(result.stdout, dtype="<f4").copy()
     if audio.size < 4800 or not np.isfinite(audio).all():
-        raise RuntimeError("No usable audio was recorded. Start recording before playing the message.")
+        raise SilentAudio("No usable audio was recorded. Start recording before playing the message.")
     # Reject silence before Whisper can turn it into an invented transcript.
     blocks = audio[:audio.size // 1600 * 1600].reshape(-1, 1600)
     audible = np.flatnonzero(np.sqrt(np.mean(blocks ** 2, axis=1)) > 0.0003)
     if not audible.size:
-        raise RuntimeError("No audio was heard. Play the voice message while recording, with WhatsApp unmuted.")
+        raise SilentAudio("No audio was heard. Play the voice message while recording, with WhatsApp unmuted.")
     first = max(0, int(audible[0]) * 1600 - 4800)
     last = min(audio.size, (int(audible[-1]) + 1) * 1600 + 4800)
     return audio[first:last]
@@ -31,8 +34,6 @@ def load_audio(path: Path) -> np.ndarray:
 
 class Transcriber:
     def __init__(self):
-        if not (os.environ.get('VOICE_FFMPEG') or shutil.which('ffmpeg')):
-            raise RuntimeError('Install FFmpeg, then restart Sera Relay. See the setup guide.')
         import torch
         import whisper
         torch.set_num_threads(8)

@@ -45,10 +45,11 @@ function installReviewUI() {
     const state = cache.get(r.id) || {}, memory = state.memory || {}, draft = memory.draft;
     const busy = !!state.busy || !!r.pending, verified = !!draft?.verified;
     const changed = !!draft && draft.transcript !== r.transcript.value;
-    r.preview.disabled = busy || verified; r.publish.disabled = busy || !draft || changed || verified; r.verify.disabled = busy || !draft;
+    r.preview.disabled = busy || verified; const plan = r.taskSelection?.() || { ok: true, count: 0 };
+    r.publish.disabled = busy || !draft || changed || verified || !plan.ok; r.verify.disabled = busy || !draft;
     r.verify.hidden = !draft?.page_id && !draft?.url && !draft?.duplicate && memory.status !== 'uncertain';
     r.preview.textContent = memory.status === 'review_error' || r.error ? 'Retry Sera review' : changed ? 'Refresh breakdown' : 'Refresh preview';
-    r.publish.textContent = draft?.duplicate ? 'Use existing memory' : 'Publish memory';
+    r.publish.textContent = (draft?.duplicate ? 'Use existing memory' : 'Publish memory') + (plan.count ? ` + create ${plan.count} task${plan.count === 1 ? '' : 's'}` : '');
     r.publish.hidden = verified; r.preview.hidden = verified;
     r.title.readOnly = verified; r.transcript.readOnly = verified;
     const error = r.error || (!busy && (['uncertain','review_error'].includes(memory.status) || (!draft && memory.error) || /fail|could not|not confirmed/i.test(memory.error || '')) ? memory.error : '');
@@ -56,7 +57,7 @@ function installReviewUI() {
     r.status.setAttribute('aria-busy', String(busy && !error));
     r.statusTitle.textContent = error ? 'Sera needs your attention' : busy ? (r.pending === 'prepare' || !draft ? 'Sera is thinking' : 'Sera is working') : verified ? 'Memory saved' : 'Sera\u2019s review';
     r.thinking.hidden = !busy || !!error;
-    r.statusText.textContent = error || (busy ? ({prepare:'Reading your transcript, preparing a summary, and checking duplicates.',publish:'Publishing and checking the saved record.',verify:'Checking the saved record.',tasks:'Creating your selected shared tasks.'}[r.pending] || 'Working...') : verified ? (draft.tasks?.length ? `Memory saved. ${draft.tasks.length} task${draft.tasks.length === 1 ? '' : 's'} created.` : 'Published and verified. You can now assign follow-ups.') : changed ? 'Transcript changed. Refresh the breakdown before publishing.' : draft ? 'Preview ready. Check the summary, then publish when ready.' : 'Preview unavailable. Choose Refresh preview to try again.');
+    r.statusText.textContent = error || (busy ? ({prepare:'Reading your transcript, preparing a summary, and checking duplicates.',publish:'Publishing, checking the saved record, then creating any selected tasks.',verify:'Checking the saved record.',tasks:'Creating your selected shared tasks.'}[r.pending] || 'Working...') : verified ? (draft.tasks?.length ? `Memory saved. ${draft.tasks.length} task${draft.tasks.length === 1 ? '' : 's'} created.` : 'Published and verified. You can now assign follow-ups.') : changed ? 'Transcript changed. Refresh the breakdown before publishing.' : draft ? 'Preview ready. Check the summary, then publish when ready.' : 'Preview unavailable. Choose Refresh preview to try again.');
     if (busy && !error) { const seconds = Math.floor((Date.now() - r.started) / 1000); r.statusText.textContent += ` ${seconds}s elapsed.`; if (seconds >= 15) r.statusText.textContent += ' You can close review and continue using WhatsApp while this finishes.'; }
     r.recordLinks.replaceChildren();
     if (verified && !busy) {
@@ -67,7 +68,7 @@ function installReviewUI() {
     if (!draft || JSON.stringify(draft) === r.signature) return;
     remember(); r.signature = JSON.stringify(draft);
     if (!r.title.value) r.title.value = draft.title;
-    r.contents.replaceChildren();
+    r.contents.replaceChildren(); r.taskSelection = null; r.updateTasks = null;
     const summary = element('section'); summary.append(element('h3', 'Sera\u2019s summary'), element('p', draft.summary || 'No summary returned.'));
     r.contents.append(summary);
     if (draft.duplicate) { const p = element('p', 'This transcript already exists. Publishing will reuse it: '); p.append(link(draft.duplicate.title, draft.duplicate.url)); summary.prepend(p); }
@@ -81,7 +82,7 @@ function installReviewUI() {
       r.contents.append(section);
     }
     if (draft.actions?.length) {
-      const section = element('section'); section.append(element('h3', 'Follow-ups'), element('p', 'Choose a follow-up, people, and a due date. Publish the memory, then create your shared tasks.', 'vr-muted'));
+      const section = element('section'); section.append(element('h3', 'Follow-ups'), element('p', 'Optional. Check a follow-up, choose people and a due date, and it is created as a shared task when you publish.', 'vr-muted'));
       const rows = [];
       draft.actions.forEach((a, index) => {
         const saved = r.tasks[index] || (r.tasks[index] = { checked: false, owners: [], date: '' });
@@ -95,17 +96,19 @@ function installReviewUI() {
         const people = element('div', '', 'vr-people'); people.setAttribute('role', 'group'); people.setAttribute('aria-label', 'Task assignees');
         const sorted = [...(draft.owners || [])].sort((a,b) => a.name.localeCompare(b.name));
         function selected() { chips.replaceChildren(); for (const o of sorted.filter(o => saved.owners.includes(o.id))) chips.append(element('span', o.name, 'vr-chip')); if (!saved.owners.length) chips.append(element('small', 'No people selected')); }
-        for (const o of sorted) { const label = element('label', '', 'vr-person'), c = element('input'); c.type = 'checkbox'; c.dataset.owner = o.id; c.checked = saved.owners.includes(o.id); c.disabled = busy; label.dataset.name = o.name.toLocaleLowerCase(); label.append(c, element('span', o.name)); c.onchange = () => { saved.owners = [...people.querySelectorAll(':checked')].map(e => e.dataset.owner); selected(); r.updateTasks(busy); }; people.append(label); }
+        for (const o of sorted) { const label = element('label', '', 'vr-person'), c = element('input'); c.type = 'checkbox'; c.dataset.owner = o.id; c.checked = saved.owners.includes(o.id); c.disabled = busy; label.dataset.name = o.name.toLocaleLowerCase(); label.append(c, element('span', o.name)); c.onchange = () => { saved.owners = [...people.querySelectorAll(':checked')].map(e => e.dataset.owner); selected(); refresh(); }; people.append(label); }
         const empty = element('small', 'No matching people. Try another name.'); empty.hidden = true; people.append(empty); picker.append(people); selected();
         search.oninput = () => { let count = 0; for (const label of people.querySelectorAll('[data-name]')) { label.hidden = !label.dataset.name.includes(search.value.trim().toLocaleLowerCase()); if (!label.hidden) count++; } empty.hidden = count > 0; };
         const date = field(picker, 'Due date'); date.type = 'date'; date.value = saved.date; date.disabled = busy;
-        date.oninput = () => { saved.date = date.value; r.updateTasks(busy); };
-        check.onchange = () => { saved.checked = check.checked; picker.hidden = !check.checked; r.updateTasks(busy); };
+        date.oninput = () => { saved.date = date.value; refresh(); };
+        check.onchange = () => { saved.checked = check.checked; picker.hidden = !check.checked; refresh(); };
         row.append(picker); section.append(row); rows.push({ index, saved, check, date, completed });
       });
-      const create = button('Create shared tasks', () => { const selected = rows.filter(x => x.saved.checked); void request('tasks', { selection: selected.map(x => ({index:x.index,owner_ids:x.saved.owners,due_date:x.saved.date})) }); }); create.className = 'vr-primary';
+      const isValid = x => x.saved.owners.length > 0 && x.saved.owners.length <= 20 && x.saved.date && x.date.checkValidity();
+      r.taskSelection = () => { const picked = rows.filter(x => x.saved.checked && !x.completed); return { ok: picked.every(isValid), count: picked.length, selection: picked.map(x => ({index:x.index,owner_ids:x.saved.owners,due_date:x.saved.date})) }; };
+      const create = button('Create shared tasks', () => void request('tasks', { selection: r.taskSelection().selection })); create.className = 'vr-primary';
       const hint = element('p', '', 'vr-muted'); hint.setAttribute('aria-live', 'polite');
-      r.updateTasks = nextBusy => { const picked = rows.filter(x => x.saved.checked); const valid = picked.length && picked.every(x => x.saved.owners.length > 0 && x.saved.owners.length <= 20 && x.saved.date && x.date.checkValidity()); create.disabled = nextBusy || !verified || !valid; hint.textContent = !verified ? 'Your selections are kept. Publish the memory to create these tasks.' : !picked.length ? 'Select a follow-up to begin.' : !valid ? 'Choose 1 to 20 people and a due date for every selected follow-up.' : `${picked.length} shared task${picked.length === 1 ? '' : 's'} ready to create.`; for (const el of section.querySelectorAll('input[type=checkbox],input[type=date]')) el.disabled = nextBusy; for (const row of rows) if (row.completed) row.check.disabled = true; };
+      r.updateTasks = nextBusy => { const plan = r.taskSelection(), n = plan.count, valid = n && plan.ok; create.hidden = !verified; create.disabled = nextBusy || !valid; hint.textContent = n && !plan.ok ? 'Choose 1 to 20 people and a due date for each checked follow-up, or uncheck it.' : !verified ? (n ? `${n} shared task${n === 1 ? '' : 's'} will be created when you publish.` : 'Nothing selected. The memory publishes without tasks.') : !n ? 'Check a follow-up to add a task to this saved memory.' : `${n} shared task${n === 1 ? '' : 's'} ready to create.`; for (const el of section.querySelectorAll('input[type=checkbox],input[type=date]')) el.disabled = nextBusy; for (const row of rows) if (row.completed) row.check.disabled = true; };
       section.append(create, hint); r.contents.append(section); r.updateTasks(busy);
     }
     for (const task of draft.tasks || []) { const p = element('p'); p.append(link('Task created: ' + task.title, task.url)); r.contents.append(p); }
@@ -122,15 +125,16 @@ function installReviewUI() {
       const sourceDisclosure = details('Transcript \u00b7 review or edit', source); sourceDisclosure.open = !draft?.verified; scroll.append(sourceDisclosure);
       const status = element('div', '', 'vr-status'); status.setAttribute('role','status'); const avatar = element('img'); avatar.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4Ij48cmVjdCB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgcng9IjY0IiBmaWxsPSIjMTExYjIxIi8+PHBhdGggZD0iTTM2IDMyaDU2djMySDM2Vjk2aDU2IiBmaWxsPSJub25lIiBzdHJva2U9IiM2M2RlYzYiIHN0cm9rZS13aWR0aD0iMTIiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48L3N2Zz4='; avatar.alt = 'Sera'; avatar.width = 44; avatar.height = 44; const statusCopy = element('div', '', 'vr-status-copy'), statusTitle = element('span', '', 'vr-status-title'), thinking = element('span', '\u2022\u2022\u2022', 'vr-thinking'), statusText = element('p'); thinking.setAttribute('aria-hidden','true'); const statusHeading = element('div'); statusHeading.append(statusTitle,thinking); statusTitle.setAttribute('aria-live','polite'); const recordLinks = element('div', '', 'vr-record-links'); statusCopy.append(statusHeading,statusText,recordLinks); status.append(avatar,statusCopy); const contents = element('div'); scroll.append(contents);
       const footer = element('footer'); const preview = button('Refresh preview', () => void request('prepare',{title:title.value,transcript:transcript.value}));
-      const publish = button('Publish memory', () => void request('publish',{title:title.value,transcript:transcript.value,related_ids:[...contents.querySelectorAll('[data-related]:checked')].map(x=>x.dataset.related)})); publish.className = 'vr-primary';
+      const publish = button('Publish memory', () => void request('publish',{title:title.value,transcript:transcript.value,related_ids:[...contents.querySelectorAll('[data-related]:checked')].map(x=>x.dataset.related),selection:(active?.taskSelection?.().selection || [])})); publish.className = 'vr-primary';
       const verify = button('Check saved record', () => void request('verify',{})); footer.append(publish,preview,verify);
       dialog.append(header,status,scroll,footer); document.body.append(dialog);
       active = {id,dialog,title,transcript,status,statusTitle,statusText,thinking,recordLinks,contents,preview,publish,verify,tasks:saved?.tasks || {},signature:'',pending:null,error:''};
       active.started = Date.now(); active.lastLookup = Date.now(); active.tick = setInterval(() => { refresh(); if (active && (active.pending || cache.get(active.id)?.busy) && Date.now() - active.lastLookup >= 15000 && window.onVoiceLookup) { active.lastLookup = Date.now(); void window.onVoiceLookup([active.id]).catch(() => {}); } }, 1000);
       transcript.oninput = () => { remember(); refresh(); }; title.oninput = remember;
       dialog.addEventListener('cancel', e => {e.preventDefault();close();});
+      dialog.addEventListener('click', e => { if (e.target === dialog) close(); });
       dialog.showModal(); refresh(); x.focus();
-      if (!state?.busy && (retry || !draft)) {
+      if (!state?.busy && !draft?.verified && (retry || !draft)) {
         if (state?.memory?.status === 'uncertain' && draft) void request('verify',{});
         else void request('prepare',{title:title.value,transcript:transcript.value});
       }

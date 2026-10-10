@@ -152,7 +152,7 @@ class McpClient:
                 message = None if notification else read_mcp_response(response, self.counter, timeout=wait)
         except urllib.error.HTTPError as error:
             if error.code in (401, 403):
-                raise NotWritten('Sera rejected the token. Connect Sera with an Amora document-write token.') from None
+                raise NotWritten('Sera rejected the token. Connect Sera with a document-write token.') from None
             raise MemoryError('Sera connection failed. Check the MCP URL and connection.') from None
         except (ValueError, UnicodeError):
             raise MemoryError('Sera returned an unreadable MCP response.') from None
@@ -191,8 +191,9 @@ class McpClient:
         result = self.request('tools/call', {'name': name, 'arguments': arguments})
         if result.get('isError'):
             if any(block.get('text', '').startswith('Denied: this connection') for block in result.get('content', [])):
-                raise NotWritten('This token cannot save documents. Connect Sera with an Amora full-scope token.')
-            raise MemoryError('Sera could not complete this step. Verify document-write access in Amora.')
+                raise NotWritten('This token cannot save documents. Connect Sera with a full-scope token.')
+            detail = ' '.join(block.get('text', '').strip() for block in result.get('content', []) if block.get('text', '').strip())[:300]
+            raise MemoryError('Sera could not complete this step: ' + detail if detail else 'Sera could not complete this step. Verify document-write access in your Sera workspace.')
         return '\n'.join(block.get('text', '') for block in result.get('content', []) if block.get('type') == 'text')
 
     def close(self):
@@ -226,6 +227,8 @@ class SeraMemory:
             db.execute("UPDATE memory_receipts SET content_state='analysis_uncertain', error='Breakdown save was interrupted. Check Living Memory before trying again.' WHERE content_state='analysis_saving'")
             db.execute("UPDATE memory_receipts SET status='uncertain', error='Saving was interrupted. Check Living Memory before importing this note again.' WHERE status='saving'")
             db.execute("UPDATE memory_receipts SET status='saved', error='Saved. Select Ask Sera to get advice.' WHERE status='advising'")
+            # A failed task step must never mark a published, verified memory as unsaved.
+            db.execute("UPDATE memory_receipts SET status='done', error='Memory saved. The last task attempt failed. Open it to try again.' WHERE status='review_error' AND url<>'' AND content_state='complete'")
         from memory_workflow import MemoryWorkflow
         self.workflow = MemoryWorkflow(self)
 
@@ -273,23 +276,42 @@ class SeraMemory:
                 raise MemoryError('Transcribe this note first.')
             config = self.credentials()
             client = self.factory(config['endpoint'], config['token'])
+            task_step = False
             try:
                 if action == 'prepare':
                     client.deadline = time.monotonic() + PREVIEW_TIMEOUT
                 client.start()
                 if 'publish_voice_memory' not in getattr(client, 'tools', set()):
                     raise MemoryError('This connector needs the reviewed voice-memory update.')
+                existing = self.workflow.get(config['endpoint'], identifier)
+                if action == 'prepare' and existing and existing.get('verified'):
+                    # Re-analysing a published memory would overwrite its record link and tasks.
+                    changed()
+                    return
                 if action == 'prepare': self.workflow.prepare(client, config['endpoint'], row, values)
                 elif action == 'publish':
                     self.workflow.update(config['endpoint'], identifier, values)
                     self.workflow.publish(client, config['endpoint'], row, changed)
+                    if values.get('selection') and (self.workflow.get(config['endpoint'], identifier) or {}).get('verified'):
+                        task_step = True
+                        self.workflow.tasks(client, config['endpoint'], identifier, values['selection'])
                 elif action == 'verify': self.workflow.verify(client, config['endpoint'], row)
-                elif action == 'tasks': self.workflow.tasks(client, config['endpoint'], identifier, values.get('selection'))
+                elif action == 'tasks':
+                    task_step = bool(existing and existing.get('verified'))
+                    self.workflow.tasks(client, config['endpoint'], identifier, values.get('selection'))
                 else: raise MemoryError('Unknown memory action.')
                 if action == 'prepare': self.write(config['endpoint'], identifier, status='ready', error='')
-                elif action == 'tasks': self.write(config['endpoint'], identifier, status='done', error='')
+                elif task_step:
+                    count = len(values['selection'])
+                    self.write(config['endpoint'], identifier, status='done', error=f"Memory saved. {count} task{'' if count == 1 else 's'} created.")
                 changed()
             except Exception as error:
+                if task_step:
+                    # The memory is already published and verified; only the task step failed.
+                    message = 'Memory saved. Could not create the task: ' + str(error)
+                    self.write(config['endpoint'], identifier, status='done', error=message)
+                    error.args = (message,)
+                    raise
                 with self.inbox.connect() as db:
                     db.execute("INSERT INTO memory_receipts(endpoint,id,status,error) VALUES(?,?,'review_error',?) ON CONFLICT(endpoint,id) DO UPDATE SET error=excluded.error,status=CASE WHEN memory_receipts.status IN ('saving','uncertain') THEN 'uncertain' ELSE 'review_error' END", (config['endpoint'], identifier, str(error)))
                 raise
@@ -303,7 +325,7 @@ class SeraMemory:
     @staticmethod
     def analysis(client, row, source_url=''):
         advice = client.call('ask_sera', {'question':
-            'Analyze this received WhatsApp voice note for Amora Living Memory. '
+            'Analyze this received WhatsApp voice note for Living Memory. '
             'Give the reader a useful structured breakdown: main points, context grounded in memory, '
             'proposals versus confirmed decisions, candidate follow-ups, and relevant source links. '
             'Do not execute actions or treat suggestions as approved decisions. '

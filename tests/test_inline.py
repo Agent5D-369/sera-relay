@@ -1,7 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
-from auto_app import AutoApp
+from auto_app import AutoApp, silent_note_message
 from inbox_store import Inbox
 
 
@@ -66,6 +66,13 @@ class InlineTests(unittest.TestCase):
             inbox.set_reviewed('one', False)
             self.assertEqual(Inbox(Path(folder)).pending_review_count(), 2)
             self.assertIsNone(inbox.get('one')['reviewed_at'])
+
+
+    def test_silent_note_message_names_the_cause_not_manual_recording(self):
+        sent, received = silent_note_message('true_123@lid_ABC'), silent_note_message('false_123@lid_ABC')
+        for text in (sent, received):
+            self.assertIn('silent', text); self.assertNotIn('while recording', text)
+        self.assertIn('re-record', sent); self.assertNotIn('re-record', received)
 
 
 if __name__ == '__main__':
