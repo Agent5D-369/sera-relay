@@ -4,6 +4,9 @@ name: Release
 # A person reviews the draft and publishes it. Publishing is never automatic.
 on:
   workflow_dispatch:
+  # Pushing a release/* branch builds a draft before the workflow exists on main.
+  push:
+    branches: ['release/**']
 
 permissions: {}
 
