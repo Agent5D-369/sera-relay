@@ -19,6 +19,8 @@ class Inbox:
                 timestamp INTEGER NOT NULL, status TEXT NOT NULL, path TEXT,
                 transcript TEXT NOT NULL DEFAULT '', error TEXT NOT NULL DEFAULT '',
                 updated REAL NOT NULL)""")
+            if 'reviewed_at' not in {row['name'] for row in db.execute('PRAGMA table_info(notes)')}:
+                db.execute("ALTER TABLE notes ADD COLUMN reviewed_at REAL")
             db.execute("UPDATE notes SET status='queued' WHERE status='processing'")
             db.execute("UPDATE notes SET status='failed', error='Download interrupted. Select Retry.' WHERE status='downloading'")
         for receipt in self.spool.glob('*.audio.json'):
@@ -111,3 +113,16 @@ class Inbox:
         with self.connect() as db:
             row = db.execute('SELECT * FROM notes WHERE id=?', (identifier,)).fetchone()
             return dict(row) if row else None
+
+    def set_reviewed(self, identifier, reviewed):
+        """Local-only marker: the person looked at this transcript. Never sent to Sera."""
+        with self.connect() as db:
+            return db.execute("UPDATE notes SET reviewed_at=? WHERE id=? AND status='done'",
+                              (time.time() if reviewed else None, identifier)).rowcount == 1
+
+    def pending_review_count(self):
+        """Transcribed notes that are neither marked reviewed nor saved to Sera."""
+        with self.connect() as db:
+            saved = "AND id NOT IN (SELECT id FROM memory_receipts WHERE url<>'')" if db.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='memory_receipts'").fetchone() else ''
+            return db.execute("SELECT COUNT(*) FROM notes WHERE status='done' AND reviewed_at IS NULL " + saved).fetchone()[0]

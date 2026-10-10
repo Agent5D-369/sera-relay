@@ -2,28 +2,63 @@
 from pathlib import Path
 import os
 import sys
-import subprocess
 import shutil
+import subprocess
 import numpy as np
 
+from platform_support import NO_WINDOW
 
-def load_audio(path: Path) -> np.ndarray:
+RATE = 16000
+
+
+class SilentAudio(RuntimeError):
+    """The audio decoded fine but holds no sound, so there is nothing to transcribe."""
+
+
+def resample(audio: np.ndarray, rate: int) -> np.ndarray:
+    """Band-limit, then interpolate to 16 kHz. WhatsApp notes decode at 48 kHz, an exact 3:1 step."""
+    if rate == RATE or not audio.size:
+        return audio
+    if rate > RATE:
+        # Windowed-sinc low-pass just under the new Nyquist frequency, so nothing aliases into speech.
+        cutoff = 0.45 * RATE / rate
+        taps = np.arange(-64, 65)
+        kernel = 2 * cutoff * np.sinc(2 * cutoff * taps) * np.blackman(taps.size)
+        audio = np.convolve(audio, kernel / kernel.sum(), mode='same')
+    times = np.arange(int(audio.size * RATE / rate)) * (rate / RATE)
+    return np.interp(times, np.arange(audio.size), audio).astype(np.float32)
+
+
+def decode(path: Path) -> np.ndarray:
+    """16 kHz mono float32. libsndfile reads Ogg Opus, WAV, FLAC and MP3; FFmpeg is only a fallback."""
+    try:
+        import soundfile
+        data, rate = soundfile.read(str(path), dtype='float32', always_2d=True)
+        return resample(data.mean(axis=1), rate)
+    except Exception:
+        ffmpeg = os.environ.get('VOICE_FFMPEG') or shutil.which('ffmpeg')
+        if not ffmpeg:
+            raise RuntimeError("The audio could not be read. Try opening a saved voice message instead.") from None
     result = subprocess.run(
-        [os.environ.get('VOICE_FFMPEG', 'ffmpeg'), "-nostdin", "-v", "error", "-i", str(path), "-f", "f32le",
-         "-ac", "1", "-ar", "16000", "pipe:1"],
+        [ffmpeg, "-nostdin", "-v", "error", "-i", str(path), "-f", "f32le",
+         "-ac", "1", "-ar", str(RATE), "pipe:1"],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
-        creationflags=subprocess.CREATE_NO_WINDOW, timeout=120,
+        creationflags=NO_WINDOW, timeout=120,
     )
     if result.returncode:
         raise RuntimeError("The audio could not be read. Try opening a saved voice message instead.")
-    audio = np.frombuffer(result.stdout, dtype="<f4").copy()
+    return np.frombuffer(result.stdout, dtype="<f4").copy()
+
+
+def load_audio(path: Path) -> np.ndarray:
+    audio = decode(path)
     if audio.size < 4800 or not np.isfinite(audio).all():
-        raise RuntimeError("No usable audio was recorded. Start recording before playing the message.")
+        raise SilentAudio("No usable audio was recorded. Start recording before playing the message.")
     # Reject silence before Whisper can turn it into an invented transcript.
     blocks = audio[:audio.size // 1600 * 1600].reshape(-1, 1600)
     audible = np.flatnonzero(np.sqrt(np.mean(blocks ** 2, axis=1)) > 0.0003)
     if not audible.size:
-        raise RuntimeError("No audio was heard. Play the voice message while recording, with WhatsApp unmuted.")
+        raise SilentAudio("No audio was heard. Play the voice message while recording, with WhatsApp unmuted.")
     first = max(0, int(audible[0]) * 1600 - 4800)
     last = min(audio.size, (int(audible[-1]) + 1) * 1600 + 4800)
     return audio[first:last]
@@ -31,8 +66,6 @@ def load_audio(path: Path) -> np.ndarray:
 
 class Transcriber:
     def __init__(self):
-        if not (os.environ.get('VOICE_FFMPEG') or shutil.which('ffmpeg')):
-            raise RuntimeError('Install FFmpeg, then restart Sera Relay. See the setup guide.')
         import torch
         import whisper
         torch.set_num_threads(8)

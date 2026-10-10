@@ -17,13 +17,20 @@ import psutil
 import qrcode
 from PIL import ImageTk
 
-from app import kernel32, user32
-from engine import Transcriber
+from platform_support import CREDENTIAL_NOTE, HOME, IS_MAC, IS_WINDOWS, NO_WINDOW, UI_FONT, SingleInstance, app_base
+if IS_WINDOWS:
+    from app import user32
+from engine import SilentAudio, Transcriber
+
+
+def silent_note_message(identifier):
+    sent = identifier.startswith("true_")
+    return ("This voice note is silent: no sound was recorded, so there is nothing to transcribe. "
+            + ("Play it in WhatsApp to check, and re-record it if your microphone was off." if sent else "Play it in WhatsApp to check."))
 from inbox_store import Inbox
 from sera_memory import SeraMemory
 
-BASE = Path(sys.executable).resolve().parent if getattr(sys, 'frozen', False) else Path(__file__).resolve().parent
-HOME = Path(os.environ["USERPROFILE"]) / ".whatsapp-transcriber"
+BASE = app_base()
 TITLE = "Sera Relay"
 
 
@@ -53,10 +60,10 @@ class AutoApp:
         style = ttk.Style(root)
         style.theme_use("clam")
         style.configure("TFrame", background="#f4f7f5")
-        style.configure("TLabel", background="#f4f7f5", foreground="#20372c", font=("Segoe UI", 10))
-        style.configure("Title.TLabel", font=("Segoe UI", 20, "bold"))
-        style.configure("TButton", padding=(12, 7), font=("Segoe UI", 10))
-        style.configure("Treeview", rowheight=30, font=("Segoe UI", 10))
+        style.configure("TLabel", background="#f4f7f5", foreground="#20372c", font=(UI_FONT, 10))
+        style.configure("Title.TLabel", font=(UI_FONT, 20, "bold"))
+        style.configure("TButton", padding=(12, 7), font=(UI_FONT, 10))
+        style.configure("Treeview", rowheight=30, font=(UI_FONT, 10))
         frame = ttk.Frame(root, padding=20)
         frame.pack(fill="both", expand=True)
         ttk.Label(frame, text="Received voice notes", style="Title.TLabel").pack(anchor="w")
@@ -77,7 +84,7 @@ class AutoApp:
             self.list.column(key, width=width, minwidth=80)
         self.list.pack(fill="both", expand=True)
         self.list.bind("<<TreeviewSelect>>", self.select)
-        self.text = tk.Text(frame, wrap="word", font=("Segoe UI", 11), height=8, padx=12, pady=12,
+        self.text = tk.Text(frame, wrap="word", font=(UI_FONT, 11), height=8, padx=12, pady=12,
                             relief="flat", fg="#20372c", bg="white")
         self.text.pack(fill="both", expand=True, pady=(12, 10))
         buttons = ttk.Frame(frame)
@@ -119,7 +126,7 @@ class AutoApp:
                     env['WA_TRANSCRIBER_INLINE'] = '1'
                 process = subprocess.Popen([node, str(BASE / "receiver" / "bridge.cjs")],
                     cwd=BASE / "receiver", env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE, text=True, encoding="utf-8", creationflags=subprocess.CREATE_NO_WINDOW)
+                    stderr=subprocess.PIPE, text=True, encoding="utf-8", creationflags=NO_WINDOW)
                 self.receiver = process
                 self.last_receiver_error = None
             except Exception as error:
@@ -161,6 +168,7 @@ class AutoApp:
                 continue
             entry = {key: row[key] for key in ('id', 'status', 'transcript', 'error')}
             entry['busy'] = row['id'] in getattr(self, 'sera_active', set())
+            entry['reviewed'] = bool(row.get('reviewed_at'))
             if hasattr(self, 'sera'):
                 entry['memory'] = self.sera.state(row['id'])
             if identifiers is not None or self.inline_sent.get(row['id']) != entry:
@@ -171,6 +179,17 @@ class AutoApp:
                 self.command({'type': 'inline_states', 'entries': entries})
             except Exception:
                 self.inline_sent.clear()
+        self.inline_summary()
+
+    def inline_summary(self):
+        pending = self.inbox.pending_review_count()
+        if getattr(self, 'inline_pending_sent', None) == pending:
+            return
+        try:
+            self.command({'type': 'inline_summary', 'pending': pending})
+            self.inline_pending_sent = pending
+        except Exception:
+            self.inline_pending_sent = None
 
     def inline_request(self, identifier):
         row = self.inbox.get(identifier)
@@ -190,7 +209,7 @@ class AutoApp:
         window.focus_force()
         # This separate app's credential dialog must remain above the browser while open.
         def activate():
-            if window.winfo_exists():
+            if window.winfo_exists() and IS_WINDOWS:
                 window.update_idletasks()
                 user32.GetParent.argtypes = [ctypes.c_void_p]
                 user32.GetParent.restype = ctypes.c_void_p
@@ -209,14 +228,14 @@ class AutoApp:
         window.geometry('650x340')
         frame = ttk.Frame(window, padding=20)
         frame.pack(fill='both', expand=True)
-        ttk.Label(frame, text='Amora MCP URL').pack(anchor='w')
+        ttk.Label(frame, text='Sera MCP URL').pack(anchor='w')
         endpoint = ttk.Entry(frame)
         endpoint.pack(fill='x', pady=(4, 12))
         endpoint.insert(0, '')
         ttk.Label(frame, text='Bearer token with document-write access (full scope)').pack(anchor='w')
         token = ttk.Entry(frame, show='*')
         token.pack(fill='x', pady=(4, 12))
-        ttk.Label(frame, text='Stored encrypted for your Windows account. The token stays outside WhatsApp.\nSend to Sera uploads only the selected transcript and its sender, chat, date, and message ID.', wraplength=600).pack(anchor='w')
+        ttk.Label(frame, text=CREDENTIAL_NOTE + ' The token stays outside WhatsApp.\nSend to Sera uploads only the selected transcript and its sender, chat, date, and message ID.', wraplength=600).pack(anchor='w')
         status = tk.StringVar(value='Connection test reads connector metadata; it does not upload a transcript.')
         ttk.Label(frame, textvariable=status, wraplength=600).pack(anchor='w', pady=10)
         def save():
@@ -302,6 +321,9 @@ class AutoApp:
                 if audio.parent != self.inbox.spool or not audio.is_file():
                     raise RuntimeError("The downloaded voice note is missing. Select Retry to download it again.")
                 self.inbox.complete(row["id"], self.model.transcribe(audio))
+            except SilentAudio:
+                # The download is complete but the recording itself has no sound; retrying cannot help.
+                self.inbox.fail(row["id"], silent_note_message(row["id"]))
             except Exception as error:
                 self.inbox.fail(row["id"], error)
             self.events.put({"type": "changed"})
@@ -458,11 +480,15 @@ class AutoApp:
                     row = self.inbox.get(event['id'])
                     if row:
                         entry = {key: row[key] for key in ('id', 'status', 'transcript', 'error')}
+                        entry['reviewed'] = bool(row.get('reviewed_at'))
                         entry['memory'] = dict(self.sera.state(event['id']), error=event['error'])
                         try:
                             self.command({'type': 'inline_states', 'entries': [entry]})
                         except Exception:
                             pass
+            elif kind == 'inline_reviewed':
+                self.inbox.set_reviewed(event['id'], bool(event.get('reviewed')))
+                self.inline_states([event['id']])
             elif kind == 'inline_lookup':
                 self.inline_states(event['ids'])
             elif kind == 'inline_request':
@@ -548,48 +574,57 @@ class AutoApp:
         threading.Thread(target=stop, daemon=True).start()
 
 
+def focus_running_window():
+    """Bring an already connected WhatsApp window forward. Returns False when there is none."""
+    try:
+        state = json.loads((HOME / 'state.json').read_text(encoding='utf-8'))
+        if state.get('inline') and state['connection'].startswith('Connected'):
+            subprocess.Popen([shutil.which('node'), str(BASE / 'receiver/focus.cjs'), str(HOME)],
+                             creationflags=NO_WINDOW)
+            return True
+    except (OSError, ValueError, KeyError, TypeError):
+        pass
+    return False
+
+
 def main():
     inline = '--inline' in sys.argv
-    mutex = kernel32.CreateMutexW(None, False, "Local\\WhatsAppAutoTranscriber-2026")
-    if ctypes.get_last_error() == 183:
+    instance = SingleInstance(HOME)
+    if not instance.acquired and not IS_WINDOWS:
+        focus_running_window()
+        return
+    if not instance.acquired:
         user32.FindWindowW.argtypes = [ctypes.c_wchar_p, ctypes.c_wchar_p]
         user32.FindWindowW.restype = ctypes.c_void_p
         user32.ShowWindow.argtypes = [ctypes.c_void_p, ctypes.c_int]
         user32.SetForegroundWindow.argtypes = [ctypes.c_void_p]
         window = user32.FindWindowW(None, TITLE)
         if inline and window:
-            try:
-                state = json.loads((HOME / 'state.json').read_text(encoding='utf-8'))
-                if state.get('inline') and state['connection'].startswith('Connected'):
-                    subprocess.Popen([shutil.which('node'), str(BASE / 'receiver/focus.cjs'), str(HOME)],
-                                     creationflags=subprocess.CREATE_NO_WINDOW)
-                    kernel32.CloseHandle(mutex)
-                    return
-            except (OSError, ValueError, KeyError, TypeError):
-                pass
-            kernel32.CloseHandle(mutex)
+            if focus_running_window():
+                return
             user32.PostMessageW.argtypes = [ctypes.c_void_p, ctypes.c_uint, ctypes.c_size_t, ctypes.c_ssize_t]
             user32.PostMessageW(window, 0x0010, 0, 0)
             deadline = time.monotonic() + 20
             while user32.FindWindowW(None, TITLE) and time.monotonic() < deadline:
                 time.sleep(.2)
-            mutex = kernel32.CreateMutexW(None, False, "Local\\WhatsAppAutoTranscriber-2026")
-            if ctypes.get_last_error() == 183:
-                kernel32.CloseHandle(mutex)
+            instance = SingleInstance(HOME)
+            if not instance.acquired:
                 return
         else:
             if window:
                 user32.ShowWindow(window, 9)
                 user32.SetForegroundWindow(window)
-            kernel32.CloseHandle(mutex)
             return
     root = tk.Tk()
     application = AutoApp(root, inline=inline)
+    if IS_MAC:
+        # Cmd+Q and the Dock's Quit close the receiver cleanly instead of killing it.
+        root.createcommand('tk::mac::Quit', application.close)
     try:
         root.mainloop()
     finally:
         application.closing.set()
-        kernel32.CloseHandle(mutex)
+        instance.release()
 
 
 if __name__ == "__main__":

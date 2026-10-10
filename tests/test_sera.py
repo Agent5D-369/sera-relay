@@ -5,6 +5,7 @@ from pathlib import Path
 import tempfile
 import unittest
 from inbox_store import Inbox
+import platform_support
 from sera_memory import SeraMemory, MemoryError, NotWritten, protect, McpClient, validate_endpoint, read_mcp_response, document_title
 
 
@@ -76,9 +77,13 @@ class SeraTests(unittest.TestCase):
         self.inbox = Inbox(Path(self.folder.name))
         self.inbox.ingest({'type': 'incoming', 'id': 'voice', 'sender': 'Sender', 'chat': 'Chat', 'timestamp': 1790985600})
         self.inbox.complete('voice', 'Please review this proposal.')
+        # On macOS the credential goes to the Keychain; keep test runs away from a real saved token.
+        self.service, platform_support.KEYCHAIN_SERVICE = platform_support.KEYCHAIN_SERVICE, 'Sera Relay Test'
         self.memory = SeraMemory(self.inbox, FakeClient)
         self.memory.configure('https://memory.example.com/mcp', 'fake-secret-for-tests')
     def tearDown(self):
+        platform_support.forget_keychain('Sera Relay Test')
+        platform_support.KEYCHAIN_SERVICE = self.service
         self.folder.cleanup()
     def test_save_advice_and_repeat_survive_restart(self):
         self.memory.send('voice')
@@ -186,6 +191,14 @@ class SeraTests(unittest.TestCase):
         FakeClient.denied = False
         self.memory.send('voice')
         self.assertEqual(self.memory.state('voice')['status'], 'done')
+    def test_tool_errors_show_seras_reason(self):
+        client = McpClient('https://example.com/mcp', 'synthetic')
+        client.request = lambda *a, **k: {'isError': True, 'content': [{'type': 'text', 'text': 'owner_id is required'}]}
+        with self.assertRaisesRegex(Exception, 'Sera could not complete this step: owner_id is required'):
+            client.call('create_voice_task', {})
+        client.request = lambda *a, **k: {'isError': True, 'content': []}
+        with self.assertRaisesRegex(Exception, 'document-write access'):
+            client.call('create_voice_task', {})
     def test_mcp_session_headers_and_handshake(self):
         requests = []
         class Response:

@@ -15,11 +15,15 @@ const inline = process.env.WA_TRANSCRIBER_INLINE === '1';
 const home = process.env.WA_TRANSCRIBER_DATA;
 if (!home || !path.isAbsolute(home)) throw new Error('A local application data directory is required.');
 const emit = event => process.stdout.write(JSON.stringify(event) + '\n');
-const browser = [
+const macApps = ['Google Chrome.app/Contents/MacOS/Google Chrome', 'Microsoft Edge.app/Contents/MacOS/Microsoft Edge'];
+const browser = (process.platform === 'darwin' ? [
+  ...macApps.map(app => path.join('/Applications', app)),
+  ...macApps.map(app => path.join(require('node:os').homedir(), 'Applications', app)),
+] : [
   path.join(process.env.PROGRAMFILES || '', 'Google/Chrome/Application/chrome.exe'),
   path.join(process.env['PROGRAMFILES(X86)'] || '', 'Microsoft/Edge/Application/msedge.exe'),
   path.join(process.env.LOCALAPPDATA || '', 'Google/Chrome/Application/chrome.exe'),
-].find(file => fs.existsSync(file));
+]).find(file => fs.existsSync(file));
 if (!browser) throw new Error('Install Chrome or Edge to connect WhatsApp.');
 const client = new Client({
   authStrategy: new LocalAuth({ clientId: 'voice-transcriber', dataPath: path.join(home, 'auth') }),
@@ -128,6 +132,10 @@ readline.createInterface({ input: process.stdin }).on('line', async line => {
     const command = JSON.parse(line);
     if (command.type === 'inline_states' && inline && Array.isArray(command.entries)) {
       await client.pupPage.evaluate(entries => window.VoiceTranscriber?.update(entries), command.entries);
+      return;
+    }
+    if (command.type === 'inline_summary' && inline && Number.isInteger(command.pending)) {
+      await client.pupPage.evaluate(pending => window.VoiceTranscriber?.summary(pending), command.pending);
       return;
     }
     if (command.type === 'inline_download' && inline && typeof command.id === 'string') {

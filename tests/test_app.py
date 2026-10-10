@@ -1,3 +1,7 @@
+import sys
+import unittest
+if sys.platform != 'win32':
+    raise unittest.SkipTest('Playback capture and global hotkeys are Windows-only.')
 import ctypes
 from ctypes import wintypes
 from pathlib import Path
