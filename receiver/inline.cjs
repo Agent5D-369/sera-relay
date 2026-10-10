@@ -40,7 +40,7 @@ function installPageInline() {
     const attention = state.status === 'failed' || ['uncertain','review_error'].includes(state.memory?.status) || (!!state.memory?.url && !saved);
     panel.dataset.state = attention ? 'attention' : saved ? 'saved' : state.status === 'done' ? 'transcribed' : 'pending';
     panel.setAttribute('aria-busy', String(!!state.busy || ['downloading','queued','processing'].includes(state.status)));
-    const heading = document.createElement('div'); heading.className = 'vt-heading'; heading.textContent = attention ? (state.memory?.url ? 'Saved Ã‚· Needs attention' : 'Needs attention') : saved ? 'Saved to Living Memory' : state.status === 'done' ? 'Transcribed Ã‚· Not saved yet' : 'Voice note to text'; panel.appendChild(heading);
+    const heading = document.createElement('div'); heading.className = 'vt-heading'; heading.textContent = attention ? (state.memory?.url ? 'Saved \u00b7 Needs attention' : 'Needs attention') : saved ? 'Saved to Living Memory' : state.status === 'done' ? 'Transcribed \u00b7 Not saved yet' : 'Voice note to text'; panel.appendChild(heading);
     const button = document.createElement('button');
     button.type = 'button';
     button.textContent = state.status === 'done' ? 'Copy transcript' : state.status === 'failed' ? 'Retry transcription' : ({ downloading: 'Downloading...', queued: 'Queued...', processing: 'Transcribing...' }[state.status] || 'Transcribe');
