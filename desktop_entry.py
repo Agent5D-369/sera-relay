@@ -23,7 +23,8 @@ def self_test():
     model = Transcriber()
     result = {'version': VERSION, 'platform': sys.platform, 'tk': True, 'model': True, 'numpy': np.__version__,
               'decoder': 'libsndfile ' + soundfile.__libsndfile_version__}
-    p = subprocess.run(['node', '--version'], capture_output=True, creationflags=NO_WINDOW, timeout=15)
+    # Generous: antivirus scans a freshly installed node.exe on its first run.
+    p = subprocess.run(['node', '--version'], capture_output=True, creationflags=NO_WINDOW, timeout=90)
     if p.returncode: raise RuntimeError('Bundled runtime check failed')
     result['node'] = p.stdout.decode(errors='replace').strip()
     if '--audio' in sys.argv:
