@@ -19,8 +19,15 @@ class Inbox:
                 timestamp INTEGER NOT NULL, status TEXT NOT NULL, path TEXT,
                 transcript TEXT NOT NULL DEFAULT '', error TEXT NOT NULL DEFAULT '',
                 updated REAL NOT NULL)""")
-            if 'reviewed_at' not in {row['name'] for row in db.execute('PRAGMA table_info(notes)')}:
+            columns = {row['name'] for row in db.execute('PRAGMA table_info(notes)')}
+            if 'reviewed_at' not in columns:
                 db.execute("ALTER TABLE notes ADD COLUMN reviewed_at REAL")
+            if 'kind' not in columns:
+                db.execute("ALTER TABLE notes ADD COLUMN kind TEXT NOT NULL DEFAULT 'voice'")
+            # Written selections: which WhatsApp messages each item holds. item_id 'dismissed' = handled, not sent.
+            db.execute("CREATE TABLE IF NOT EXISTS text_sources (message_id TEXT NOT NULL, item_id TEXT NOT NULL, PRIMARY KEY(message_id,item_id))")
+            db.execute("CREATE TABLE IF NOT EXISTS inbox_messages (id TEXT PRIMARY KEY, chat TEXT NOT NULL, timestamp INTEGER NOT NULL)")
+            db.execute("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
             db.execute("UPDATE notes SET status='queued' WHERE status='processing'")
             db.execute("UPDATE notes SET status='failed', error='Download interrupted. Select Retry.' WHERE status='downloading'")
         for receipt in self.spool.glob('*.audio.json'):
@@ -126,3 +133,68 @@ class Inbox:
             saved = "AND id NOT IN (SELECT id FROM memory_receipts WHERE url<>'')" if db.execute(
                 "SELECT 1 FROM sqlite_master WHERE type='table' AND name='memory_receipts'").fetchone() else ''
             return db.execute("SELECT COUNT(*) FROM notes WHERE status='done' AND reviewed_at IS NULL " + saved).fetchone()[0]
+
+    def add_text(self, event):
+        """Store a written selection as a finished item, so it uses the same review and publish path as a transcript."""
+        identifier, sources, transcript = event.get('id'), event.get('sources'), event.get('transcript')
+        if not isinstance(identifier, str) or not identifier.startswith('text_') or len(identifier) > 1024:
+            raise ValueError('Invalid message selection identifier')
+        if (not isinstance(sources, list) or not 1 <= len(sources) <= 100
+                or any(not isinstance(s, str) or not s or len(s) > 1024 for s in sources)):
+            raise ValueError('Invalid message selection')
+        if not isinstance(transcript, str) or not transcript.strip() or len(transcript) > 100000:
+            raise ValueError('Invalid message text')
+        with self.connect() as db:
+            db.execute("""INSERT OR IGNORE INTO notes(id,sender,chat,timestamp,status,transcript,updated,kind)
+                VALUES(?,?,?,?,'done',?,?,'text')""", (identifier, str(event.get('sender') or 'Unknown sender')[:500],
+                str(event.get('chat') or 'WhatsApp')[:500], int(event.get('timestamp') or time.time()), transcript, time.time()))
+            db.executemany('INSERT OR IGNORE INTO text_sources VALUES(?,?)', [(source, identifier) for source in sources])
+            # A message that was handled without sending is no longer handled once it is sent.
+            db.executemany("DELETE FROM text_sources WHERE message_id=? AND item_id='dismissed'", [(source,) for source in sources])
+
+    def sources(self, identifier):
+        with self.connect() as db:
+            return [row['message_id'] for row in db.execute('SELECT message_id FROM text_sources WHERE item_id=? ORDER BY rowid', (identifier,))]
+
+    def items_for(self, message_ids):
+        with self.connect() as db:
+            marks = ','.join('?' * len(message_ids))
+            return list(dict.fromkeys(row['item_id'] for row in db.execute(
+                f"SELECT item_id FROM text_sources WHERE item_id<>'dismissed' AND message_id IN ({marks})", message_ids))) if message_ids else []
+
+    def dismiss(self, message_ids):
+        with self.connect() as db:
+            db.executemany("INSERT OR IGNORE INTO text_sources VALUES(?,'dismissed')", [(m,) for m in message_ids])
+
+    def inbox(self):
+        with self.connect() as db:
+            values = {row['key']: row['value'] for row in db.execute("SELECT * FROM settings WHERE key LIKE 'inbox_%'")}
+            if not values.get('inbox_chat'):
+                return None
+            pending = [row['id'] for row in db.execute(
+                """SELECT id FROM inbox_messages WHERE chat=? AND timestamp>=? AND id NOT IN (SELECT message_id FROM text_sources)
+                ORDER BY timestamp LIMIT 100""", (values['inbox_chat'], int(float(values.get('inbox_since', 0)))))]
+        return {'chat': values['inbox_chat'], 'name': values.get('inbox_name', ''),
+                'since': int(float(values.get('inbox_since', 0))), 'pending': pending}
+
+    def set_inbox(self, chat, name):
+        """Messages from before the chat was chosen are not counted as new; they can still be selected by hand."""
+        with self.connect() as db:
+            db.execute("DELETE FROM settings WHERE key LIKE 'inbox_%'")
+            db.executemany('INSERT INTO settings VALUES(?,?)', [('inbox_chat', chat), ('inbox_name', name), ('inbox_since', str(int(time.time())))])
+
+    def clear_inbox(self):
+        with self.connect() as db:
+            db.execute("DELETE FROM settings WHERE key LIKE 'inbox_%'")
+            db.execute('DELETE FROM inbox_messages')
+
+    def record_inbox_message(self, event):
+        identifier, chat = event.get('id'), event.get('chat')
+        if not all(isinstance(v, str) and v and len(v) <= 1024 for v in (identifier, chat)):
+            raise ValueError('Invalid inbox message')
+        current = self.inbox()
+        if not current or current['chat'] != chat:
+            return False
+        with self.connect() as db:
+            return db.execute('INSERT OR IGNORE INTO inbox_messages VALUES(?,?,?)',
+                              (identifier, chat, int(event.get('timestamp') or time.time()))).rowcount == 1

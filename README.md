@@ -1,6 +1,6 @@
 # Sera Relay
 
-Read your WhatsApp voice notes as text, right inside WhatsApp, on your Windows PC or Mac. Speech is transcribed on your own computer. If your team uses Sera, you can turn a note into a reviewed shared memory and follow-up tasks in one step.
+Read your WhatsApp voice notes as text, right inside WhatsApp, on your Windows PC or Mac. Speech is transcribed on your own computer. If your team uses Sera, you can turn a voice note or a set of written messages into a reviewed shared memory and follow-up tasks in one step.
 
 <p>
   <a href="https://github.com/Agent5D-369/sera-relay/releases/latest/download/SeraRelay-Windows-Setup.exe"><b>Download for Windows</b></a>
@@ -86,6 +86,22 @@ If your team has a Sera workspace, select **Connect Sera** under any transcript 
 
 Nothing is sent to Sera unless you select it. A saved memory means you reviewed it, not that the speaker approved every suggestion.
 
+### Written messages
+
+1. Open the chat and select **Select messages for Sera** at the bottom of the conversation.
+2. Click the messages you want. Shift-click picks everything between two messages. Photo, video, and file captions count as text.
+3. Select **Review with Sera**. The same review opens, and the messages are saved as copied text with each sender and time.
+
+A forwarded message shows who forwarded it, because WhatsApp does not show the original author. Messages already sent to Sera carry a small label that reopens their review.
+
+### Sera inbox chat
+
+Pick one chat where people forward anything worth keeping, such as a small group called "Sera inbox". Open it, then in **Voice notes + Sera** select **Use the open chat as Sera inbox** and confirm.
+
+New messages in that chat are counted in the panel. **Review new inbox messages** opens the chat with them already selected. **Mark as handled** clears messages you do not want to keep, without sending them. Sera Relay only reads this chat; it never posts or replies.
+
+Tell everyone in the inbox chat that what they post may be saved to Sera after review.
+
 ![Review a voice note with Sera before saving](docs/screenshots/review.png)
 
 ## Privacy
@@ -94,7 +110,7 @@ Nothing is sent to Sera unless you select it. A saved memory means you reviewed 
 - Downloaded voice-note audio is deleted after it is transcribed.
 - Transcripts, the WhatsApp link, and settings stay in a folder in your user profile (`.whatsapp-transcriber`). Uninstalling the app leaves this folder, so reinstalling keeps your history. Delete the folder to erase it.
 - The Sera token is stored with your operating system's protection: Windows encryption for your account, or your macOS Keychain.
-- Only notes you choose to publish go to the Sera workspace you connect.
+- Only notes and messages you choose to publish go to the Sera workspace you connect. Selected written messages are read from your linked WhatsApp session on your computer and stored with your local history.
 
 ## Help
 

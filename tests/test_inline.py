@@ -53,12 +53,12 @@ class InlineTests(unittest.TestCase):
             commands = []
             app.command = commands.append
             app.inline_states()
-            self.assertIn({'type': 'inline_summary', 'pending': 3}, commands)
+            self.assertIn({'type': 'inline_summary', 'pending': 3, 'inbox': None}, commands)
             self.assertTrue(inbox.set_reviewed('one', True))
             commands.clear()
             app.inline_states(['one'])
             self.assertTrue(commands[0]['entries'][0]['reviewed'])
-            self.assertIn({'type': 'inline_summary', 'pending': 2}, commands)
+            self.assertIn({'type': 'inline_summary', 'pending': 2, 'inbox': None}, commands)
             with inbox.connect() as db:
                 db.execute("CREATE TABLE IF NOT EXISTS memory_receipts (endpoint TEXT, id TEXT, status TEXT, url TEXT NOT NULL DEFAULT '')")
                 db.execute("INSERT INTO memory_receipts VALUES ('e','two','done','https://www.notion.so/x')")

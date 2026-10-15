@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Send written messages to Sera. Under an open chat, select **Select messages for Sera**, pick messages (Shift-select picks a range), then **Review with Sera**. They go through the same review as a voice note and publish as copied text, not as a transcript.
+- Saved or in-review messages show a small Sera label that reopens their review.
+- Sera inbox: choose one chat that people forward messages into. New messages there are counted, and one click opens the chat with them selected. **Mark as handled** clears them without sending anything. The app only reads the chat and never posts.
+- Publishing written messages needs the matching Sera server update; older servers are refused before anything is sent.
+
 ## 2.2.0-beta.1
 
 - Mac support for Apple Silicon, with the Sera token stored in the macOS Keychain.

@@ -169,6 +169,9 @@ class AutoApp:
             entry = {key: row[key] for key in ('id', 'status', 'transcript', 'error')}
             entry['busy'] = row['id'] in getattr(self, 'sera_active', set())
             entry['reviewed'] = bool(row.get('reviewed_at'))
+            entry['kind'] = row.get('kind') or 'voice'
+            if entry['kind'] == 'text':
+                entry['sources'] = self.inbox.sources(row['id'])
             if hasattr(self, 'sera'):
                 entry['memory'] = self.sera.state(row['id'])
             if identifiers is not None or self.inline_sent.get(row['id']) != entry:
@@ -183,11 +186,14 @@ class AutoApp:
 
     def inline_summary(self):
         pending = self.inbox.pending_review_count()
-        if getattr(self, 'inline_pending_sent', None) == pending:
+        inbox = self.inbox.inbox()
+        if inbox:
+            inbox = {key: inbox[key] for key in ('chat', 'name', 'pending')}
+        if getattr(self, 'inline_pending_sent', None) == (pending, inbox):
             return
         try:
-            self.command({'type': 'inline_summary', 'pending': pending})
-            self.inline_pending_sent = pending
+            self.command({'type': 'inline_summary', 'pending': pending, 'inbox': inbox})
+            self.inline_pending_sent = (pending, inbox)
         except Exception:
             self.inline_pending_sent = None
 
@@ -200,6 +206,37 @@ class AutoApp:
             self.inline_states([identifier])
             return
         self.command({'type': 'inline_download', 'id': identifier})
+
+    def inbox_config(self):
+        inbox = self.inbox.inbox()
+        try:
+            self.command({'type': 'inbox_config', 'chat': inbox['chat'] if inbox else '', 'since': inbox['since'] if inbox else 0})
+        except Exception:
+            pass
+
+    def text_event(self, event):
+        kind = event['type']
+        if kind == 'text_capture':
+            self.inbox.add_text(event)
+            dirty = True
+            self.inline_states([event['id']])
+            return dirty
+        if kind == 'inline_text_lookup':
+            items = self.inbox.items_for(event['ids'])
+            if items:
+                self.inline_states(items)
+        elif kind == 'inline_text_dismiss':
+            self.inbox.dismiss(event['ids'])
+        elif kind == 'inbox_message':
+            self.inbox.record_inbox_message(event)
+        elif kind == 'inline_inbox_set':
+            self.inbox.set_inbox(event['chat'], event.get('name', ''))
+            self.inbox_config()
+        elif kind == 'inline_inbox_clear':
+            self.inbox.clear_inbox()
+            self.inbox_config()
+        self.inline_summary()
+        return False
 
     def show_sera_window(self):
         window = self.sera_window
@@ -481,6 +518,9 @@ class AutoApp:
                     if row:
                         entry = {key: row[key] for key in ('id', 'status', 'transcript', 'error')}
                         entry['reviewed'] = bool(row.get('reviewed_at'))
+                        entry['kind'] = row.get('kind') or 'voice'
+                        if entry['kind'] == 'text':
+                            entry['sources'] = self.inbox.sources(row['id'])
                         entry['memory'] = dict(self.sera.state(event['id']), error=event['error'])
                         try:
                             self.command({'type': 'inline_states', 'entries': [entry]})
@@ -497,6 +537,11 @@ class AutoApp:
                 except Exception:
                     self.inbox.fail(event['id'], 'Could not download this voice note. Try again.')
                     self.inline_states([event['id']])
+            elif kind in ('text_capture', 'inline_text_lookup', 'inline_text_dismiss', 'inbox_message', 'inline_inbox_set', 'inline_inbox_clear'):
+                try:
+                    dirty = self.text_event(event) or dirty
+                except Exception:
+                    self.report('A written message could not be stored. Try again.')
             elif kind == 'window_closed':
                 self.close()
             elif kind.startswith("history_"):
@@ -524,6 +569,7 @@ class AutoApp:
                 self.report("Connected. Listening for new received voice notes.")
                 self.reconnect_button.configure(state="normal")
                 self.inline_states()
+                self.inbox_config()
                 for row in self.inbox.rows():
                     if row['status'] == 'failed' and row['error'].startswith('Voice note download failed.'):
                         try:
