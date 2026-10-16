@@ -54,6 +54,14 @@ class AutoApp:
         self.history_window = None
         self.history_chats = {}
         root.title(TITLE)
+        try:
+            # The Sera Relay icon in the title bar and taskbar, not Tk's default feather.
+            if IS_WINDOWS:
+                root.iconbitmap(str(BASE / 'assets' / 'sera-relay.ico'))
+            else:
+                root.iconphoto(True, tk.PhotoImage(file=str(BASE / 'assets' / 'sera-relay.png')))
+        except tk.TclError:
+            pass
         root.geometry("850x670")
         root.minsize(690, 530)
         root.protocol("WM_DELETE_WINDOW", self.close)
