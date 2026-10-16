@@ -15,6 +15,7 @@ Chrome or Edge is required. Nothing else: FFmpeg is no longer needed. Updating k
 - **Labels on sent messages.** Messages already sent to Sera show a small label that reopens their review.
 - **Sera inbox chat.** Choose one chat that people forward messages into. New messages there are counted in the panel, and one click opens the chat with them selected. **Mark as handled** clears messages without sending them. Sera Relay only reads that chat and never posts.
 - A forwarded message shows who forwarded it, because WhatsApp does not show the original author.
+- **Choose the install drive on Windows.** First install asks for a folder, so the app can go on another drive. The one-line installer accepts `$env:SERA_RELAY_DIR = 'D:\SeraRelay'`. Updates reuse the chosen folder.
 - Publishing written messages needs a current Sera workspace. Older Sera servers are refused before anything is sent.
 
 Everything from 2.2 is included: Mac support, the one-file Windows installer, no FFmpeg, note colors, Mark reviewed, the voice-note rail, and one-step publish with tasks.

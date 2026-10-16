@@ -2,6 +2,7 @@
 
 ## 2.3.0-beta.1
 
+- Windows setup asks where to install on first install, so the app (about 2 GB) can go on another drive. The one-line installer takes `$env:SERA_RELAY_DIR`. Updates reuse the chosen folder.
 - Send written messages to Sera. Under an open chat, select **Select messages for Sera**, pick messages (Shift-select picks a range), then **Review with Sera**. They go through the same review as a voice note and publish as copied text, not as a transcript.
 - Saved or in-review messages show a small Sera label that reopens their review.
 - Sera inbox: choose one chat that people forward messages into. New messages there are counted, and one click opens the chat with them selected. **Mark as handled** clears them without sending anything. The app only reads the chat and never posts.

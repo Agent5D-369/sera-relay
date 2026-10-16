@@ -22,13 +22,22 @@ You need Google Chrome or Microsoft Edge installed, and about 2 GB of free space
 
 1. Download **[SeraRelay-Windows-Setup.exe](https://github.com/Agent5D-369/sera-relay/releases/latest/download/SeraRelay-Windows-Setup.exe)** and open it.
 2. If Windows shows "Windows protected your PC", select **More info**, then **Run anyway**.
-3. Setup installs for your account only. No administrator password is needed. Sera Relay opens when it finishes, and it is in your Start menu and on your Desktop.
+3. Choose where to install. The default is your user folder on drive C:. To use another drive, select **Browse** and pick a folder such as `D:\SeraRelay`. Setup shows the space it needs and checks that you can write there. Updates reuse the same folder without asking.
+4. Setup installs for your account only. No administrator password is needed. Sera Relay opens when it finishes, and it is in your Start menu and on your Desktop.
 
 Prefer one line? Open PowerShell and paste:
 
 ```powershell
 irm https://raw.githubusercontent.com/Agent5D-369/sera-relay/main/install.ps1 | iex
 ```
+
+To install on another drive with the one-line installer, set the folder first. The download is stored there too, so drive C: needs no free space for it:
+
+```powershell
+$env:SERA_RELAY_DIR = 'D:\SeraRelay'; irm https://raw.githubusercontent.com/Agent5D-369/sera-relay/main/install.ps1 | iex
+```
+
+Your transcripts and settings stay in your user profile (`.whatsapp-transcriber`), wherever the app is installed.
 
 ### Mac with Apple Silicon (M1 or newer)
 
