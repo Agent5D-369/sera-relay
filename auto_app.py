@@ -570,6 +570,8 @@ class AutoApp:
                 self.reconnect_button.configure(state="normal")
             elif kind == "ready":
                 self.inline_sent.clear()
+                # A reloaded WhatsApp page starts empty; resend the panel summary even if the counts did not change.
+                self.inline_pending_sent = None
                 self.last_receiver_error = None
                 self.qr_frame.pack_forget()
                 self.qr_label.configure(image="")

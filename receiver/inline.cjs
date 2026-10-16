@@ -310,6 +310,8 @@ function installPageInline() {
   const cancelPick = barButton('Cancel', () => stopSelecting());
   const pickNote = document.createElement('small'); pickNote.setAttribute('aria-live', 'polite');
   bar.append(startPick, pickCount, reviewPick, dismissPick, cancelPick, pickNote); document.body.append(bar);
+  // Hide the selection-only buttons now, not when the first summary arrives from the app.
+  paintBar();
   function chatId(chat) { return chat?.id?._serialized || (chat?.id ? String(chat.id) : ''); }
   function startSelecting(chat) { if (!chat) return; selecting = chat; picked.clear(); anchor = null; pickNote.textContent = 'Select the messages to send. Shift-select picks a range.'; paintBar(); scan(); }
   function stopSelecting(note = '') { selecting = null; picked.clear(); anchor = null; pickNote.textContent = note; paintBar(); }

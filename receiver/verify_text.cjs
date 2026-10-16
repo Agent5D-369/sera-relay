@@ -52,6 +52,8 @@ const chrome = process.platform === 'win32' ? 'C:/Program Files/Google/Chrome/Ap
     await page.evaluate(installReviewUI);
     await page.evaluate(installPageInline);
     await page.waitForSelector('.vt-select:not([hidden])');
+    // Before any summary arrives from the app, only the start button shows.
+    assert.equal(await page.$eval('.vt-select', e => [...e.querySelectorAll('button')].filter(b => !b.hidden).map(b => b.textContent).join('|')), 'Select messages for Sera');
 
     // Not selecting: clicks reach WhatsApp untouched, and only text bubbles are looked up.
     await page.click('[data-id=t1] .bubble');
