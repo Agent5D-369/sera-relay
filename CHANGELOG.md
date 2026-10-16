@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.3.0-beta.1
 
 - Send written messages to Sera. Under an open chat, select **Select messages for Sera**, pick messages (Shift-select picks a range), then **Review with Sera**. They go through the same review as a voice note and publish as copied text, not as a transcript.
 - Saved or in-review messages show a small Sera label that reopens their review.

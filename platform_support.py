@@ -5,7 +5,7 @@ from pathlib import Path
 import subprocess
 import sys
 
-VERSION = '2.2.0-beta.1'
+VERSION = '2.3.0-beta.1'
 IS_WINDOWS = sys.platform == 'win32'
 IS_MAC = sys.platform == 'darwin'
 NO_WINDOW = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
