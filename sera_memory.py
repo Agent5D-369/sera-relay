@@ -37,6 +37,12 @@ def validate_endpoint(endpoint):
     return endpoint.rstrip('/')
 
 
+def supports_text(client):
+    """Older Sera servers label every record as a voice transcript; written messages need the source_kind field."""
+    schema = getattr(client, 'schemas', {}).get('publish_voice_memory', {})
+    return 'text' in ((schema.get('properties') or {}).get('source_kind') or {}).get('enum', [])
+
+
 class NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, *args, **kwargs):
         return None
@@ -172,6 +178,7 @@ class McpClient:
         self.request('notifications/initialized', notification=True)
         tools = self.request('tools/list').get('tools', [])
         self.tools = {tool['name'] for tool in tools}
+        self.schemas = {tool['name']: tool.get('inputSchema') or {} for tool in tools}
         if not {'save_document', 'ask_sera'}.issubset({tool['name'] for tool in tools}):
             raise MemoryError('This connector does not provide save_document and ask_sera.')
         document = next(tool for tool in tools if tool['name'] == 'save_document')
@@ -275,6 +282,8 @@ class SeraMemory:
                 client.start()
                 if 'publish_voice_memory' not in getattr(client, 'tools', set()):
                     raise MemoryError('This connector needs the reviewed voice-memory update.')
+                if row.get('kind') == 'text' and not supports_text(client):
+                    raise MemoryError('Your Sera workspace needs an update before it can save written messages. Nothing was sent.')
                 existing = self.workflow.get(config['endpoint'], identifier)
                 if action == 'prepare' and existing and existing.get('verified'):
                     # Re-analysing a published memory would overwrite its record link and tasks.
@@ -343,6 +352,8 @@ class SeraMemory:
             row = self.inbox.get(identifier)
             if not row or row['status'] != 'done' or not row['transcript'].strip():
                 raise MemoryError('Transcribe the received voice note first.')
+            if row.get('kind') == 'text':
+                raise MemoryError('Open the review to save written messages.')
             config = self.credentials()
             endpoint = config['endpoint']
             state = self.state(identifier)

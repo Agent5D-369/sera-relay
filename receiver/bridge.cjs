@@ -5,6 +5,7 @@ const readline = require('node:readline');
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const { Incoming } = require('./incoming.cjs');
 const { History } = require('./history.cjs');
+const { TextCapture, InboxWatch } = require('./text.cjs');
 const { installCompatibility } = require('./compat.cjs');
 const { installInline } = require('./inline.cjs');
 const { showWindow } = require('./window.cjs');
@@ -29,7 +30,8 @@ const client = new Client({
   authStrategy: new LocalAuth({ clientId: 'voice-transcriber', dataPath: path.join(home, 'auth') }),
   userAgent: false,
   webVersionCache: { type: 'none' },
-  puppeteer: { executablePath: browser, headless: !inline,
+  // Without --enable-automation Chrome does not show "Chrome is being controlled by automated test software".
+  puppeteer: { executablePath: browser, headless: !inline, ignoreDefaultArgs: ['--enable-automation'],
     ...(inline ? { args: ['--app=https://web.whatsapp.com/', '--window-size=1150,850'], defaultViewport: null } : {}) },
 });
 // Preserve the library's cache behavior, but contain cache-only response failures.
@@ -91,6 +93,8 @@ client.inject = async () => {
 };
 const incoming = new Incoming(path.join(home, 'spool'), emit);
 const history = new History(client, incoming, emit);
+const text = new TextCapture(client, emit);
+const inbox = new InboxWatch(client, emit);
 // The library's reconstructed QR can contain a stale Conn.ref. The DOM observer
 // above forwards WhatsApp's actual QR instead, including every refresh.
 client.on('authenticated', () => emit({ type: 'status', status: 'Linked. Syncing WhatsApp...' }));
@@ -103,7 +107,7 @@ client.on('ready', async () => {
         try { const info = await session.send('SystemInfo.getProcessInfo'); external = startExternal(info.processInfo.find(p=>p.type==='browser').id); }
         finally { await session.detach(); }
       }
-      await installInline(client, emit, url=>external.open(url));
+      await installInline(client, emit, url=>external.open(url), ids => text.capture(ids));
       await showWindow(client.pupBrowser);
       client.pupBrowser.once('disconnected', () => { emit({ type: 'window_closed' }); void shutdown(); });
     }
@@ -115,7 +119,7 @@ client.on('ready', async () => {
 client.on('auth_failure', () => emit({ type: 'status', status: 'Linking failed. Reconnect and scan the new QR code.' }));
 client.on('disconnected', () => emit({ type: 'status', status: 'WhatsApp disconnected. Select Reconnect.' }));
 client.on('message', message => { void incoming.receive(message); });
-client.on('message_create', message => { if (message.fromMe) void incoming.receive(message); });
+client.on('message_create', message => { if (message.fromMe) void incoming.receive(message); inbox.consider(message); });
 
 let closing = false;
 async function shutdown() {
@@ -135,8 +139,12 @@ readline.createInterface({ input: process.stdin }).on('line', async line => {
       return;
     }
     if (command.type === 'inline_summary' && inline && Number.isInteger(command.pending)) {
-      await client.pupPage.evaluate(pending => window.VoiceTranscriber?.summary(pending), command.pending);
+      await client.pupPage.evaluate((pending, inboxState) => window.VoiceTranscriber?.summary(pending, inboxState), command.pending, command.inbox || null);
       return;
+    }
+    if (command.type === 'inbox_config') {
+      inbox.set(command.chat, command.since);
+      return void inbox.scan();
     }
     if (command.type === 'inline_download' && inline && typeof command.id === 'string') {
       const message = await client.getMessageById(command.id);

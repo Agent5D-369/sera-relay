@@ -17,23 +17,28 @@ function installPageInline() {
   function openReview(id, retry = false) { window.VoiceReview.open(id, states.get(id), retry); }
   const style = document.createElement('style');
   style.textContent = `
-  .voice-transcriber,.voice-tools{--vt-bg:#202c33;--vt-ink:#e9edef;--vt-muted:#b9c6cd;--vt-accent:#63dec6;--vt-action:#006b56;--vt-line:#71858f;--vt-font:system-ui,sans-serif;color:var(--vt-ink);font:14px/1.5 var(--vt-font)}
+  .voice-transcriber,.voice-tools,.vt-select,.vt-text-mark{--vt-bg:#202c33;--vt-ink:#e9edef;--vt-muted:#b9c6cd;--vt-accent:#63dec6;--vt-action:#006b56;--vt-line:#71858f;--vt-font:system-ui,sans-serif;color:var(--vt-ink);font:14px/1.5 var(--vt-font)}
   .voice-transcriber{box-sizing:border-box;max-width:560px;margin:8px 12px 12px;padding:12px 14px;border:1px solid var(--vt-line);border-radius:10px;background:var(--incoming-background,var(--vt-bg));white-space:normal;overflow-wrap:anywhere}
   .voice-transcriber{--vt-attention:#ff8a80;--vt-reviewed:#c9a7ff;--vt-ready:#ffd54f;--vt-saved:#5ee08a}.voice-transcriber[data-state=pending]{border-left:4px dashed var(--vt-ready)}.voice-transcriber[data-state=pending] .vt-heading{color:var(--vt-ready)}.voice-transcriber[data-state=transcribed]{border-left:4px solid var(--vt-ready);background:linear-gradient(rgba(255,213,79,.07),rgba(255,213,79,.07)),var(--incoming-background,var(--vt-bg))}.voice-transcriber[data-state=transcribed] .vt-heading{color:var(--vt-ready)}.voice-transcriber[data-state=reviewed]{border-left:4px solid var(--vt-reviewed);background:linear-gradient(rgba(201,167,255,.08),rgba(201,167,255,.08)),var(--incoming-background,var(--vt-bg))}.voice-transcriber[data-state=reviewed] .vt-heading{color:var(--vt-reviewed)}.voice-transcriber[data-state=saved]{border-left:4px solid var(--vt-saved);background:linear-gradient(rgba(94,224,138,.07),rgba(94,224,138,.07)),var(--incoming-background,var(--vt-bg))}.voice-transcriber[data-state=saved] .vt-heading{color:var(--vt-saved)}.voice-transcriber[data-state=attention]{border-left:4px solid var(--vt-attention);background:linear-gradient(rgba(255,138,128,.08),rgba(255,138,128,.08)),var(--incoming-background,var(--vt-bg))}.voice-transcriber[data-state=attention] .vt-heading{color:var(--vt-attention)}.voice-transcriber .vt-hide{margin:0 0 8px}
-  .voice-transcriber button,.voice-tools button{font:600 13px var(--vt-font);border:1px solid var(--vt-line);border-radius:7px;background:transparent;color:var(--vt-ink);padding:8px 10px;min-height:38px;cursor:pointer;white-space:nowrap;margin:0 6px 6px 0}
-  .voice-transcriber button:hover,.voice-tools button:hover{border-color:var(--vt-accent)}.voice-transcriber button:focus-visible,.voice-tools button:focus-visible,.voice-transcriber summary:focus-visible{outline:2px solid var(--vt-accent);outline-offset:3px}.voice-transcriber button:active{transform:translateY(1px)}.voice-transcriber button:disabled{opacity:.6;cursor:default}.voice-transcriber .vt-primary{background:var(--vt-action);border-color:var(--vt-action)}
+  .voice-transcriber button,.voice-tools button,.vt-select button{font:600 13px var(--vt-font);border:1px solid var(--vt-line);border-radius:7px;background:transparent;color:var(--vt-ink);padding:8px 10px;min-height:38px;cursor:pointer;white-space:nowrap;margin:0 6px 6px 0}
+  .voice-transcriber button:hover,.voice-tools button:hover,.vt-select button:hover{border-color:var(--vt-accent)}.voice-transcriber button:focus-visible,.voice-tools button:focus-visible,.vt-select button:focus-visible,.voice-transcriber summary:focus-visible{outline:2px solid var(--vt-accent);outline-offset:3px}.voice-transcriber button:active{transform:translateY(1px)}.voice-transcriber button:disabled,.vt-select button:disabled,.voice-tools button:disabled{opacity:.6;cursor:default}.voice-transcriber .vt-primary,.vt-select .vt-primary{background:var(--vt-action);border-color:var(--vt-action)}
   .voice-transcriber p{margin:8px 0 12px;white-space:pre-wrap;overflow-wrap:anywhere;user-select:text}.voice-transcriber small{display:block;margin:6px 0;color:var(--vt-muted)}.voice-transcriber a{color:var(--vt-accent);display:inline-block;margin:8px 12px 0 0}.voice-transcriber summary{cursor:pointer;padding:6px 0;font-weight:600}.voice-transcriber .vt-heading{font-size:12px;font-weight:600;letter-spacing:.02em;margin:0 0 10px;color:var(--vt-accent)}
   .vt-rail{position:fixed;z-index:900;width:24px;display:flex;flex-direction:column;align-items:center;gap:4px;font:600 11px/1 system-ui,sans-serif;color:#e9edef}.vt-rail[hidden]{display:none}.vt-rail-track{position:relative;flex:1;width:14px;border-radius:7px;background:rgba(233,237,239,.08)}.vt-rail-band{position:absolute;left:-2px;right:-2px;min-height:6px;border-radius:5px;background:rgba(233,237,239,.16);pointer-events:none}.vt-rail-dot{position:absolute;left:1px;width:12px;height:7px;margin-top:-3px;padding:0;border:2px solid #ffd54f;border-radius:4px;cursor:pointer;background:transparent;box-sizing:border-box}.vt-rail-dot[data-state=transcribed]{background:#ffd54f;border-color:#ffd54f}.vt-rail-dot[data-state=reviewed]{background:#c9a7ff;border-color:#c9a7ff}.vt-rail-dot[data-state=saved]{background:#5ee08a;border-color:#5ee08a}.vt-rail-dot[data-state=attention]{background:#ff8a80;border-color:#ff8a80}.vt-rail-dot:hover,.vt-rail-dot:focus-visible{outline:2px solid #e9edef;outline-offset:1px}.vt-rail button.vt-rail-step{width:24px;height:22px;padding:0;border:1px solid #71858f;border-radius:6px;background:#202c33;color:#e9edef;font:inherit;cursor:pointer}.vt-rail button.vt-rail-step:disabled{opacity:.45;cursor:default}.vt-rail-count{padding:3px 4px;border-radius:6px;background:#202c33}
   .voice-tools{position:fixed;right:16px;bottom:16px;z-index:1000;max-width:calc(100% - 32px);background:var(--vt-bg);border:1px solid var(--vt-line);border-radius:10px;padding:8px 12px}.voice-tools.vt-sidebar{position:static;flex:none;margin:8px 12px;max-width:100%;z-index:auto}.voice-tools summary{cursor:pointer;font-weight:600;white-space:nowrap}.voice-tools p{max-width:260px;margin:10px 0}.voice-tools button{margin-bottom:0}.voice-transcriber[aria-busy=true] .vt-heading{color:var(--vt-muted)}
+  .vt-select{position:fixed;z-index:950;box-sizing:border-box;display:flex;align-items:center;gap:8px;flex-wrap:nowrap;width:max-content}.vt-select.vt-on{background:var(--vt-bg);border-bottom:1px solid var(--vt-line);padding:6px 16px;width:auto;flex-wrap:wrap}.vt-select.vt-low{transform:translateY(-100%);padding:8px 10px;border:1px solid var(--vt-line);border-radius:10px;background:var(--vt-bg)}.vt-select[hidden],.vt-select [hidden]{display:none}.vt-select button{margin:0;flex:none}.vt-select small{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--vt-muted)}.vt-select small:empty{display:none}.vt-select .vt-count{font-weight:600;flex:none}
+  [data-vt-text].vt-pickable{cursor:pointer;box-shadow:inset 4px 0 rgba(233,237,239,.28)}[data-vt-text].vt-picked{background:rgba(99,222,198,.16);box-shadow:inset 4px 0 #63dec6}
+  .vt-text-mark{display:block;margin:2px 12px 6px auto;padding:3px 8px;min-height:0;border:1px solid var(--vt-line);border-radius:12px;background:var(--vt-bg);color:var(--vt-ink);font:600 12px var(--vt-font);cursor:pointer}.vt-text-mark[data-state=transcribed]{border-color:#ffd54f}.vt-text-mark[data-state=reviewed]{border-color:#c9a7ff}.vt-text-mark[data-state=saved]{border-color:#5ee08a;color:#5ee08a}.vt-text-mark[data-state=attention]{border-color:#ff8a80;color:#ff8a80}.vt-text-mark:focus-visible{outline:2px solid var(--vt-accent);outline-offset:2px}
+  .voice-tools .vt-inbox{border-top:1px solid var(--vt-line);margin-top:10px;padding-top:4px}.voice-tools .vt-inbox button{margin:0 6px 6px 0}.voice-tools .vt-inbox small{display:block;max-width:260px;color:var(--vt-muted)}
   @media(max-width:560px){.voice-transcriber{margin:6px 0;max-width:100%;padding:10px}.voice-tools{right:8px;bottom:8px}}
   @media(prefers-reduced-motion:reduce){.voice-transcriber button:active{transform:none}}
   `;
   document.head.appendChild(style);
   const tools = document.createElement('details'); tools.className = 'voice-tools';
   const toolsTitle = document.createElement('summary'); toolsTitle.textContent = 'Voice notes + Sera';
-  const help = document.createElement('p'); help.textContent = 'Open a chat with a received voice note. Use its Transcribe button, then Review and publish to save the text and assign follow-ups.';
+  const help = document.createElement('p'); help.textContent = 'Voice notes: use the Transcribe button under the note. Written messages: open a chat, choose Select messages for Sera, pick the messages, then Review with Sera.';
   const settings = document.createElement('button'); settings.type = 'button'; settings.textContent = 'Sera settings'; settings.onclick = () => { tools.open = false; void window.onSeraConnect(); };
-  tools.append(toolsTitle,help,settings); document.body.append(tools);
+  const inboxBox = document.createElement('div'); inboxBox.className = 'vt-inbox';
+  tools.append(toolsTitle,help,settings,inboxBox); document.body.append(tools);
   const disclosures = new Map();
   function kindOf(state = {}) {
     const saved = !!state.memory?.draft?.verified || (state.memory?.status === 'done' && state.memory?.url && state.memory?.content_state === 'complete');
@@ -155,13 +160,15 @@ function installPageInline() {
   function scan() {
     const sidebar = document.querySelector('#side');
     if (sidebar && tools.parentElement !== sidebar) { tools.classList.add('vt-sidebar'); sidebar.insertBefore(tools, sidebar.querySelector('#pane-side')); }
-    const lookup = [];
+    const lookup = [], textLookup = [];
     for (const bubble of document.querySelectorAll('[data-id]')) {
       const domId = bubble.getAttribute('data-id');
       if (!domId) continue;
       const existing = bubble.querySelector('.voice-transcriber');
       const store = window.require('WAWebCollections').Msg;
       const msg = store.get(domId) || store.getModelsArray().find(msg => msg.id?.id === domId);
+      if (msg && writable(msg)) decorateText(bubble, msg, textLookup);
+      else if (bubble.dataset.vtText) clearText(bubble);
       if (!msg || msg.type !== 'ptt' || msg.isStatusV3) { existing?.remove(); continue; }
       const id = window.WWebJS?.getMessageModel(msg)?.id?._serialized || domId;
       if (existing?.dataset.voiceMessage === id) continue;
@@ -175,6 +182,7 @@ function installPageInline() {
     }
     for (const [id, panel] of panels) if (!panel.isConnected) panels.delete(id);
     if (lookup.length) void window.onVoiceLookup(lookup).catch(() => {});
+    if (textLookup.length && window.onTextLookup) void window.onTextLookup(textLookup.slice(0, 500)).catch(() => {});
     scheduleRail();
   }
 
@@ -221,6 +229,7 @@ function installPageInline() {
     const scroller = document.querySelector('[data-testid="conversation-panel-messages"]'), chat = activeChat();
     if (scroller !== railScroller) { railScroller?.removeEventListener('scroll', scheduleBand); scroller?.addEventListener('scroll', scheduleBand, { passive: true }); railScroller = scroller; }
     railChat = chat;
+    placeBar(scroller, chat);
     if (!scroller || !chat) { rail.hidden = true; return; }
     const all = chat.msgs.getModelsArray();
     railSpan = Math.max(all.length - 1, 1);
@@ -263,23 +272,192 @@ function installPageInline() {
     railOlder.disabled = false; drawRail();
   });
   window.addEventListener('resize', scheduleRail);
+
+  // Written messages: pick them in the open chat, then review and publish through the same Sera review.
+  // The page only sends message IDs; the receiver reads the exact text from the linked session.
+  const sourceItem = new Map(), textRequested = new Set(), picked = new Set();
+  let selecting = null, anchor = null, openWhenReady = null, inboxState = null, inboxConfirm = false;
+  const textLabels = { pending: 'Sent to Sera', transcribed: 'Sent to Sera · To review', reviewed: 'Sera · Reviewed, not saved', saved: '✓ Saved to Sera', attention: 'Sera · Needs attention' };
+  const serial = msg => msg?.id?._serialized || (msg?.id && typeof msg.id.toString === 'function' && msg.id.toString() !== '[object Object]' ? msg.id.toString() : '');
+  function writable(msg) {
+    if (msg.isStatusV3) return false;
+    if (msg.type === 'chat') return !!String(msg.body || '').trim();
+    return ['image', 'video', 'document'].includes(msg.type) && !!String(msg.caption || '').trim();
+  }
+  function decorateText(bubble, msg, lookup) {
+    const id = serial(msg); if (!id) return;
+    if (bubble.dataset.vtText !== id) bubble.dataset.vtText = id;
+    bubble.classList.toggle('vt-pickable', !!selecting);
+    bubble.classList.toggle('vt-picked', !!selecting && picked.has(id));
+    const item = sourceItem.get(id); let mark = bubble.querySelector(':scope > .vt-text-mark');
+    if (!item) { mark?.remove(); if (!textRequested.has(id)) { textRequested.add(id); lookup.push(id); } return; }
+    if (!mark) {
+      mark = document.createElement('button'); mark.type = 'button'; mark.className = 'vt-text-mark';
+      mark.addEventListener('click', event => { event.stopPropagation(); event.preventDefault(); openReview(mark.dataset.item); });
+      bubble.appendChild(mark);
+    }
+    const kind = kindOf(states.get(item));
+    mark.dataset.item = item;
+    if (mark.dataset.state !== kind) { mark.dataset.state = kind; mark.textContent = textLabels[kind]; mark.title = 'Open the Sera review for this message'; }
+  }
+  function clearText(bubble) { delete bubble.dataset.vtText; bubble.classList.remove('vt-pickable', 'vt-picked'); bubble.querySelector(':scope > .vt-text-mark')?.remove(); }
+  const bar = document.createElement('div'); bar.className = 'vt-select'; bar.hidden = true; bar.setAttribute('role', 'toolbar'); bar.setAttribute('aria-label', 'Send written messages to Sera');
+  const barButton = (text, action, primary) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = text; if (primary) b.className = 'vt-primary'; b.addEventListener('click', event => { event.stopPropagation(); void action(); }); return b; };
+  const startPick = barButton('Select messages for Sera', () => startSelecting(railChat));
+  const pickCount = document.createElement('span'); pickCount.className = 'vt-count'; pickCount.setAttribute('aria-live', 'polite');
+  const reviewPick = barButton('Review with Sera', reviewSelection, true);
+  const dismissPick = barButton('Mark as handled', dismissSelection);
+  const cancelPick = barButton('Cancel', () => stopSelecting());
+  const pickNote = document.createElement('small'); pickNote.setAttribute('aria-live', 'polite');
+  bar.append(startPick, pickCount, reviewPick, dismissPick, cancelPick, pickNote); document.body.append(bar);
+  // Hide the selection-only buttons now, not when the first summary arrives from the app.
+  paintBar();
+  function chatId(chat) { return chat?.id?._serialized || (chat?.id ? String(chat.id) : ''); }
+  function startSelecting(chat) { if (!chat) return; selecting = chat; picked.clear(); anchor = null; pickNote.textContent = 'Select the messages to send. Shift-select picks a range.'; paintBar(); scan(); }
+  function stopSelecting(note = '') { selecting = null; picked.clear(); anchor = null; pickNote.textContent = note; paintBar(); }
+  function paintBar() {
+    const on = !!selecting, inInbox = on && !!inboxState && chatId(selecting) === inboxState.chat;
+    startPick.hidden = on; pickCount.hidden = reviewPick.hidden = cancelPick.hidden = !on; dismissPick.hidden = !inInbox;
+    pickCount.textContent = picked.size === 1 ? '1 message selected' : picked.size + ' messages selected';
+    reviewPick.disabled = dismissPick.disabled = !picked.size || picked.size > 100;
+    if (picked.size > 100) pickNote.textContent = 'Select at most 100 messages at a time.';
+    for (const row of document.querySelectorAll('[data-vt-text]')) { row.classList.toggle('vt-pickable', on); row.classList.toggle('vt-picked', on && picked.has(row.dataset.vtText)); }
+    positionBar();
+  }
+  function placeBar(scroller, chat) {
+    if (selecting && chat !== selecting) stopSelecting();
+    bar.hidden = !scroller || !chat;
+    if (!bar.hidden) positionBar(scroller);
+  }
+  // The bar sits in the chat header so it never covers a message: a small button beside WhatsApp's
+  // header icons, and while selecting it fills the header, the way WhatsApp's own selection mode does.
+  function positionBar(scroller = railScroller) {
+    if (bar.hidden || !scroller) return;
+    const header = document.querySelector('#main header') || document.querySelector('[data-testid="conversation-header"]');
+    const box = header?.getBoundingClientRect();
+    bar.classList.toggle('vt-on', !!selecting && !!box);
+    bar.classList.toggle('vt-low', !box);
+    if (!box || !box.height) {
+      // No header found (WhatsApp layout changed): fall back to the lower corner of the chat.
+      const area = scroller.getBoundingClientRect();
+      Object.assign(bar.style, { left: Math.max(area.left + 8, area.right - bar.offsetWidth - 56) + 'px', top: (area.bottom - 12) + 'px', height: '', width: '', minHeight: '' });
+      return;
+    }
+    // In a narrow window the bar grows below the header rather than cutting off its buttons.
+    if (selecting) { Object.assign(bar.style, { left: box.left + 'px', top: box.top + 'px', width: box.width + 'px', height: '', minHeight: box.height + 'px' }); return; }
+    const icons = header.lastElementChild?.getBoundingClientRect();
+    const edge = icons && icons.width > 0 && icons.width < box.width / 2 ? icons.left : box.right - 170;
+    Object.assign(bar.style, { width: '', height: '', minHeight: '', top: (box.top + (box.height - bar.offsetHeight) / 2) + 'px', left: Math.max(box.left + 8, edge - bar.offsetWidth - 8) + 'px' });
+  }
+  function pick(event) {
+    if (!selecting || event.target.closest('.vt-select,.voice-transcriber,.vt-text-mark,.voice-tools,.vt-rail,dialog,a')) return;
+    const row = event.target.closest('[data-vt-text]'); if (!row) return;
+    event.preventDefault(); event.stopPropagation();
+    const id = row.dataset.vtText;
+    if (event.shiftKey && anchor && anchor !== id) {
+      const order = selecting.msgs.getModelsArray().filter(writable).map(serial), from = order.indexOf(anchor), to = order.indexOf(id);
+      if (from >= 0 && to >= 0) for (const each of order.slice(Math.min(from, to), Math.max(from, to) + 1)) picked.add(each);
+      else picked.add(id);
+    } else if (picked.has(id)) picked.delete(id); else picked.add(id);
+    anchor = id; pickNote.textContent = ''; paintBar();
+  }
+  document.addEventListener('click', pick, true);
+  async function reviewSelection() {
+    const ids = [...picked]; reviewPick.disabled = true; pickNote.textContent = 'Reading the selected messages...';
+    let result;
+    try { result = await window.onTextCapture(ids); } catch { result = { error: 'Could not read the selected messages. Try again.' }; }
+    if (!result?.id) { pickNote.textContent = result?.error || 'Could not read the selected messages. Try again.'; paintBar(); return; }
+    for (const id of ids) sourceItem.set(id, result.id);
+    if (inboxState?.pending) inboxState.pending = inboxState.pending.filter(id => !picked.has(id));
+    openWhenReady = result.id; stopSelecting(); paintInbox();
+    if (states.get(result.id)?.status === 'done') { openWhenReady = null; openReview(result.id); }
+  }
+  async function dismissSelection() {
+    const ids = [...picked];
+    try { await window.onTextDismiss(ids); } catch { pickNote.textContent = 'Could not update the inbox. Try again.'; return; }
+    if (inboxState?.pending) inboxState.pending = inboxState.pending.filter(id => !picked.has(id));
+    stopSelecting((ids.length === 1 ? '1 message' : ids.length + ' messages') + ' marked as handled. Nothing was sent to Sera.'); paintInbox();
+  }
+  function findChat(id) {
+    try {
+      const chats = window.require('WAWebCollections').Chat;
+      return chats.get(id) || chats.getModelsArray().find(chat => chatId(chat) === id) || null;
+    } catch { return null; }
+  }
+  async function openInbox() {
+    const chat = findChat(inboxState?.chat);
+    if (!chat) { inboxNote('Open the inbox chat in WhatsApp once, then try again.'); return; }
+    try { await window.require('WAWebCmd').Cmd.openChatBottom({ chat }); } catch { /* The chat may already be open. */ }
+    tools.open = false; startSelecting(chat);
+    for (const id of inboxState.pending || []) picked.add(id);
+    pickNote.textContent = picked.size ? 'New inbox messages are selected. Adjust the selection, then Review with Sera.' : 'No new messages. Select messages to send.';
+    paintBar(); scheduleRail();
+  }
+  function inboxNote(text) { const note = inboxBox.querySelector('small'); if (note) note.textContent = text; }
+  const CONSENT = 'Everyone who posts in this chat should know their messages may be saved to Sera after review.';
+  function paintInbox() {
+    inboxBox.replaceChildren();
+    const intro = document.createElement('p'), note = document.createElement('small');
+    if (inboxState?.chat) {
+      const fresh = inboxState.pending?.length || 0;
+      intro.textContent = 'Sera inbox: ' + (inboxState.name || 'chosen chat') + (fresh ? ' · ' + fresh + ' new' : ' · nothing new');
+      inboxBox.append(intro, barButton(fresh ? 'Review new inbox messages' : 'Open Sera inbox', openInbox), barButton('Stop using as inbox', () => window.onInboxClear()), note);
+      return;
+    }
+    const chat = activeChat();
+    intro.textContent = 'Sera inbox: pick one chat where people forward messages for Sera. This app only reads it and never posts.';
+    const use = barButton(inboxConfirm ? 'Confirm: use ' + (chat?.formattedTitle || chat?.name || 'this chat') : 'Use the open chat as Sera inbox', async () => {
+      const current = activeChat();
+      if (!current) { inboxNote('Open the chat you want to use first.'); return; }
+      if (!inboxConfirm) { inboxConfirm = true; paintInbox(); return; }
+      inboxConfirm = false; await window.onInboxSet(chatId(current), current.formattedTitle || current.name || '');
+    });
+    use.disabled = !chat;
+    note.textContent = inboxConfirm ? CONSENT : chat ? '' : 'Open a chat to choose it.';
+    inboxBox.append(intro, use, note);
+  }
+  tools.addEventListener('toggle', () => { if (tools.open) { inboxConfirm = false; paintInbox(); } });
+  paintInbox();
   window.VoiceTranscriber = { update(entries) {
+    let texts = false;
     for (const entry of entries) {
       const previous = states.get(entry.id);
       states.set(entry.id, entry);
       if (panels.has(entry.id) && JSON.stringify(previous) !== JSON.stringify(entry)) render(entry.id, panels.get(entry.id));
+      if (entry.kind === 'text' && Array.isArray(entry.sources)) { texts = true; for (const source of entry.sources) sourceItem.set(source, entry.id); }
     }
     window.VoiceReview.update(entries);
+    const ready = openWhenReady && entries.find(entry => entry.id === openWhenReady && entry.status === 'done');
+    if (ready) { openWhenReady = null; openReview(ready.id); }
+    if (texts) { clearTimeout(timer); timer = setTimeout(scan, 50); }
     scheduleRail();
-  }, summary(pending) {
-    toolsTitle.textContent = pending > 0 ? 'Voice notes + Sera \u00b7 ' + pending + ' to review' : 'Voice notes + Sera';
-  }, scan, dispose() { document.removeEventListener('click', recordClick, true); observer.disconnect(); clearTimeout(timer); for (const panel of panels.values()) panel.remove(); style.remove(); tools.remove(); rail.remove(); railScroller?.removeEventListener('scroll', scheduleBand); window.removeEventListener('resize', scheduleRail); window.VoiceReview?.dispose(); delete window.VoiceTranscriber; } };
+  }, summary(pending, inbox) {
+    inboxState = inbox && typeof inbox.chat === 'string' ? inbox : null;
+    const fresh = inboxState?.pending?.length || 0;
+    toolsTitle.textContent = 'Voice notes + Sera' + (pending > 0 ? ' \u00b7 ' + pending + ' to review' : '') + (fresh ? ' \u00b7 ' + fresh + ' new in inbox' : '');
+    paintInbox(); paintBar();
+  }, scan, dispose() { document.removeEventListener('click', recordClick, true); document.removeEventListener('click', pick, true); bar.remove(); for (const row of document.querySelectorAll('[data-vt-text]')) clearText(row); observer.disconnect(); clearTimeout(timer); for (const panel of panels.values()) panel.remove(); style.remove(); tools.remove(); rail.remove(); railScroller?.removeEventListener('scroll', scheduleBand); window.removeEventListener('resize', scheduleRail); window.VoiceReview?.dispose(); delete window.VoiceTranscriber; } };
   let timer;
   const observer = new MutationObserver(() => { clearTimeout(timer); timer = setTimeout(scan, 150); });
   observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-id'] });
   scan();
 }
-async function installInline(client, emit, openExternal) {
+async function installInline(client, emit, openExternal, captureText) {
+  const ids = (value, limit) => Array.isArray(value) && value.length <= limit && value.every(id => typeof id === 'string' && id && id.length <= 1024);
+  if (captureText && !await client.pupPage.evaluate(() => typeof window.onTextCapture === 'function')) await client.pupPage.exposeFunction('onTextCapture', async selection => {
+    if (!ids(selection, 100) || !selection.length) return { error: 'Select between 1 and 100 messages.' };
+    try { return { id: await captureText(selection) }; } catch (error) { return { error: String(error.message || error).slice(0, 300) }; }
+  });
+  if (!await client.pupPage.evaluate(() => typeof window.onTextLookup === 'function')) await client.pupPage.exposeFunction('onTextLookup', list => {
+    if (ids(list, 500)) emit({ type: 'inline_text_lookup', ids: list });
+  });
+  if (!await client.pupPage.evaluate(() => typeof window.onTextDismiss === 'function')) await client.pupPage.exposeFunction('onTextDismiss', list => {
+    if (ids(list, 500) && list.length) emit({ type: 'inline_text_dismiss', ids: list });
+  });
+  if (!await client.pupPage.evaluate(() => typeof window.onInboxSet === 'function')) await client.pupPage.exposeFunction('onInboxSet', (chat, name) => {
+    if (typeof chat === 'string' && chat && chat.length <= 1024 && chat !== 'status@broadcast') emit({ type: 'inline_inbox_set', chat, name: String(name || chat).slice(0, 200) });
+  });
+  if (!await client.pupPage.evaluate(() => typeof window.onInboxClear === 'function')) await client.pupPage.exposeFunction('onInboxClear', () => emit({ type: 'inline_inbox_clear' }));
   if (openExternal && !await client.pupPage.evaluate(() => typeof window.onOpenRecord === 'function')) await client.pupPage.exposeFunction('onOpenRecord', openExternal);
   if (!await client.pupPage.evaluate(() => typeof window.onSeraAction === 'function')) await client.pupPage.exposeFunction('onSeraAction', (id, action, values) => {
     if (typeof id === 'string' && id.length <= 1024 && ['prepare', 'publish', 'verify', 'tasks'].includes(action) && values && typeof values === 'object' && JSON.stringify(values).length <= 120000) emit({ type: 'sera_action', id, action, values });

@@ -27,6 +27,12 @@ def self_test():
     p = subprocess.run(['node', '--version'], capture_output=True, creationflags=NO_WINDOW, timeout=90)
     if p.returncode: raise RuntimeError('Bundled runtime check failed')
     result['node'] = p.stdout.decode(errors='replace').strip()
+    # Every module the WhatsApp receiver loads must be in the package; a missing one only fails on connect.
+    from platform_support import app_base
+    receiver = app_base() / 'receiver'
+    p = subprocess.run(['node', str(receiver / 'check-package.cjs'), str(receiver)], capture_output=True, creationflags=NO_WINDOW, timeout=90)
+    if p.returncode: raise RuntimeError(p.stderr.decode(errors='replace').strip() or 'Receiver package check failed')
+    result['receiver'] = p.stdout.decode(errors='replace').strip()
     if '--audio' in sys.argv:
         result['transcript'] = model.transcribe(Path(sys.argv[sys.argv.index('--audio') + 1]))
     Path(sys.argv[sys.argv.index('--report') + 1]).write_text(json.dumps(result, indent=2), encoding='utf-8')

@@ -57,7 +57,7 @@ function installReviewUI() {
     r.status.setAttribute('aria-busy', String(busy && !error));
     r.statusTitle.textContent = error ? 'Sera needs your attention' : busy ? (r.pending === 'prepare' || !draft ? 'Sera is thinking' : 'Sera is working') : verified ? 'Memory saved' : 'Sera\u2019s review';
     r.thinking.hidden = !busy || !!error;
-    r.statusText.textContent = error || (busy ? ({prepare:'Reading your transcript, preparing a summary, and checking duplicates.',publish:'Publishing, checking the saved record, then creating any selected tasks.',verify:'Checking the saved record.',tasks:'Creating your selected shared tasks.'}[r.pending] || 'Working...') : verified ? (draft.tasks?.length ? `Memory saved. ${draft.tasks.length} task${draft.tasks.length === 1 ? '' : 's'} created.` : 'Published and verified. You can now assign follow-ups.') : changed ? 'Transcript changed. Refresh the breakdown before publishing.' : draft ? 'Preview ready. Check the summary, then publish when ready.' : 'Preview unavailable. Choose Refresh preview to try again.');
+    r.statusText.textContent = error || (busy ? ({prepare:r.text?'Reading these messages, preparing a summary, and checking duplicates.':'Reading your transcript, preparing a summary, and checking duplicates.',publish:'Publishing, checking the saved record, then creating any selected tasks.',verify:'Checking the saved record.',tasks:'Creating your selected shared tasks.'}[r.pending] || 'Working...') : verified ? (draft.tasks?.length ? `Memory saved. ${draft.tasks.length} task${draft.tasks.length === 1 ? '' : 's'} created.` : 'Published and verified. You can now assign follow-ups.') : changed ? (r.text ? 'Messages changed.' : 'Transcript changed.') + ' Refresh the breakdown before publishing.' : draft ? 'Preview ready. Check the summary, then publish when ready.' : 'Preview unavailable. Choose Refresh preview to try again.');
     if (busy && !error) { const seconds = Math.floor((Date.now() - r.started) / 1000); r.statusText.textContent += ` ${seconds}s elapsed.`; if (seconds >= 15) r.statusText.textContent += ' You can close review and continue using WhatsApp while this finishes.'; }
     r.recordLinks.replaceChildren();
     if (verified && !busy) {
@@ -71,7 +71,7 @@ function installReviewUI() {
     r.contents.replaceChildren(); r.taskSelection = null; r.updateTasks = null;
     const summary = element('section'); summary.append(element('h3', 'Sera\u2019s summary'), element('p', draft.summary || 'No summary returned.'));
     r.contents.append(summary);
-    if (draft.duplicate) { const p = element('p', 'This transcript already exists. Publishing will reuse it: '); p.append(link(draft.duplicate.title, draft.duplicate.url)); summary.prepend(p); }
+    if (draft.duplicate) { const p = element('p', (r.text ? 'These messages already exist' : 'This transcript already exists') + ' in Living Memory. Publishing will reuse it: '); p.append(link(draft.duplicate.title, draft.duplicate.url)); summary.prepend(p); }
     if (draft.url) summary.append(link('Open saved memory', draft.url));
     const evidence = element('div');
     for (const c of draft.claims || []) { const item = element('div', '', 'vr-evidence'); item.append(element('span', c.kind, 'vr-kind'), element('p', c.text)); item.append(c.kind === 'Institutional memory' ? link('Source record', c.evidence) : element('small', c.evidence)); evidence.append(item); }
@@ -117,18 +117,18 @@ function installReviewUI() {
     open(id, state, retry = false) {
       close(); cache.set(id, state || {});
       const saved = views.get(id), draft = state?.memory?.draft;
-      const dialog = element('dialog', '', 'voice-review'); dialog.setAttribute('aria-label', 'Review voice note for Living Memory');
-      const header = element('header'); const heading = element('h2', draft?.verified ? 'Saved memory' : 'Review voice note'); const x = button('Close', close); x.setAttribute('aria-label', 'Close review'); header.append(heading, x);
+      const text = state?.kind === 'text', dialog = element('dialog', '', 'voice-review'); dialog.setAttribute('aria-label', text ? 'Review messages for Living Memory' : 'Review voice note for Living Memory');
+      const header = element('header'); const heading = element('h2', draft?.verified ? 'Saved memory' : text ? 'Review messages' : 'Review voice note'); const x = button('Close', close); x.setAttribute('aria-label', 'Close review'); header.append(heading, x);
       const scroll = element('div', '', 'vr-scroll');
-      const title = field(scroll, 'Memory title'); title.value = saved?.title || draft?.title || ''; title.placeholder = 'Sera is naming this note...'; title.maxLength = 200;
-      const source = element('div'), transcript = field(source, 'Transcript', 'textarea'); transcript.value = saved?.transcript ?? draft?.transcript ?? state?.transcript ?? '';
-      const sourceDisclosure = details('Transcript \u00b7 review or edit', source); sourceDisclosure.open = !draft?.verified; scroll.append(sourceDisclosure);
+      const title = field(scroll, 'Memory title'); title.value = saved?.title || draft?.title || ''; title.placeholder = text ? 'Sera is naming these messages...' : 'Sera is naming this note...'; title.maxLength = 200;
+      const source = element('div'), transcript = field(source, text ? 'Messages' : 'Transcript', 'textarea'); transcript.value = saved?.transcript ?? draft?.transcript ?? state?.transcript ?? '';
+      const sourceDisclosure = details((text ? 'Messages' : 'Transcript') + ' \u00b7 review or edit', source); sourceDisclosure.open = !draft?.verified; scroll.append(sourceDisclosure);
       const status = element('div', '', 'vr-status'); status.setAttribute('role','status'); const avatar = element('img'); avatar.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4Ij48cmVjdCB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgcng9IjY0IiBmaWxsPSIjMTExYjIxIi8+PHBhdGggZD0iTTM2IDMyaDU2djMySDM2Vjk2aDU2IiBmaWxsPSJub25lIiBzdHJva2U9IiM2M2RlYzYiIHN0cm9rZS13aWR0aD0iMTIiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48L3N2Zz4='; avatar.alt = 'Sera'; avatar.width = 44; avatar.height = 44; const statusCopy = element('div', '', 'vr-status-copy'), statusTitle = element('span', '', 'vr-status-title'), thinking = element('span', '\u2022\u2022\u2022', 'vr-thinking'), statusText = element('p'); thinking.setAttribute('aria-hidden','true'); const statusHeading = element('div'); statusHeading.append(statusTitle,thinking); statusTitle.setAttribute('aria-live','polite'); const recordLinks = element('div', '', 'vr-record-links'); statusCopy.append(statusHeading,statusText,recordLinks); status.append(avatar,statusCopy); const contents = element('div'); scroll.append(contents);
       const footer = element('footer'); const preview = button('Refresh preview', () => void request('prepare',{title:title.value,transcript:transcript.value}));
       const publish = button('Publish memory', () => void request('publish',{title:title.value,transcript:transcript.value,related_ids:[...contents.querySelectorAll('[data-related]:checked')].map(x=>x.dataset.related),selection:(active?.taskSelection?.().selection || [])})); publish.className = 'vr-primary';
       const verify = button('Check saved record', () => void request('verify',{})); footer.append(publish,preview,verify);
       dialog.append(header,status,scroll,footer); document.body.append(dialog);
-      active = {id,dialog,title,transcript,status,statusTitle,statusText,thinking,recordLinks,contents,preview,publish,verify,tasks:saved?.tasks || {},signature:'',pending:null,error:''};
+      active = {id,text,dialog,title,transcript,status,statusTitle,statusText,thinking,recordLinks,contents,preview,publish,verify,tasks:saved?.tasks || {},signature:'',pending:null,error:''};
       active.started = Date.now(); active.lastLookup = Date.now(); active.tick = setInterval(() => { refresh(); if (active && (active.pending || cache.get(active.id)?.busy) && Date.now() - active.lastLookup >= 15000 && window.onVoiceLookup) { active.lastLookup = Date.now(); void window.onVoiceLookup([active.id]).catch(() => {}); } }, 1000);
       transcript.oninput = () => { remember(); refresh(); }; title.oninput = remember;
       dialog.addEventListener('cancel', e => {e.preventDefault();close();});

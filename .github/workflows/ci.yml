@@ -49,3 +49,4 @@ jobs:
           node receiver/verify_inline.cjs
           node receiver/verify_retry.cjs
           node receiver/verify_ux.cjs
+          node receiver/verify_text.cjs

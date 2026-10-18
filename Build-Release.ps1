@@ -8,12 +8,15 @@ if ($LASTEXITCODE) { throw 'Desktop build failed.' }
 $release = Join-Path $PSScriptRoot 'dist\SeraRelay'
 $receiver = Join-Path $release 'receiver'
 New-Item -ItemType Directory -Path $receiver -Force | Out-Null
-$runtimeFiles = @('bridge.cjs','compat.cjs','external.cjs','focus.cjs','history.cjs','incoming.cjs','inline.cjs','media-compat.cjs','review-ui.cjs','window.cjs','package.json','package-lock.json')
+# Every receiver module except tests and browser checks. A hand-kept list left text.cjs out of 2.3's first build.
+$runtimeFiles = @(Get-ChildItem receiver -Filter *.cjs | Where-Object { $_.Name -notmatch '\.test\.cjs$|^verify_' } | ForEach-Object Name) + @('package.json','package-lock.json')
 foreach ($file in $runtimeFiles) { Copy-Item -LiteralPath (Join-Path 'receiver' $file) -Destination $receiver }
 $env:PUPPETEER_SKIP_DOWNLOAD = 'true'
 $npmCli = Join-Path (Split-Path (Get-Command npm.cmd).Source) 'node_modules\npm\bin\npm-cli.js'
 & "$release\_internal\runtime\node.exe" $npmCli ci --omit=dev --prefix $receiver --ignore-scripts
 if ($LASTEXITCODE) { throw 'Receiver dependency install failed.' }
+& "$release\_internal\runtime\node.exe" (Join-Path $receiver 'check-package.cjs') $receiver
+if ($LASTEXITCODE) { throw 'The receiver package is missing a module.' }
 Copy-Item -LiteralPath 'DEPLOYMENT.md' -Destination $release
 Copy-Item -LiteralPath 'assets' -Destination $release -Recurse -Force
 $notices = Join-Path $release 'THIRD-PARTY-NOTICES'

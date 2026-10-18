@@ -19,7 +19,10 @@ AppPublisherURL=https://github.com/Agent5D-369/sera-relay
 AppSupportURL=https://github.com/Agent5D-369/sera-relay/blob/main/SUPPORT.md
 ; Same folder as the earlier ZIP installer, so this upgrades it in place.
 DefaultDirName={localappdata}\SeraRelay
-DisableDirPage=yes
+; First install asks where to put the app (it needs about 2 GB, most of it the speech model), so it can go on
+; another drive. Upgrades reuse the earlier folder without asking. Command line: /DIR="D:\Apps\SeraRelay".
+DisableDirPage=auto
+UsePreviousAppDir=yes
 DisableProgramGroupPage=yes
 DisableReadyPage=yes
 PrivilegesRequired=lowest
@@ -54,3 +57,25 @@ Name: "{userdesktop}\Sera Relay"; Filename: "{app}\SeraRelay.exe"; Parameters: "
 
 [Run]
 Filename: "{app}\SeraRelay.exe"; Parameters: "--inline"; Description: "Open Sera Relay now"; Flags: nowait postinstall skipifsilent
+
+[Code]
+// The installer runs without administrator rights, so a protected folder such as Program Files
+// would fail halfway through copying. Check that the chosen folder is writable before starting.
+function NextButtonClick(CurPageID: Integer): Boolean;
+var
+  Probe: String;
+begin
+  Result := True;
+  if CurPageID = wpSelectDir then
+  begin
+    Probe := AddBackslash(WizardDirValue) + '.sera-relay-write-test';
+    if not ForceDirectories(WizardDirValue) or not SaveStringToFile(Probe, 'ok', False) then
+    begin
+      MsgBox('Sera Relay cannot write to this folder without administrator rights.' + #13#10 +
+        'Choose a folder you own, for example D:\SeraRelay.', mbError, MB_OK);
+      Result := False;
+    end
+    else
+      DeleteFile(Probe);
+  end;
+end;
