@@ -34,6 +34,11 @@ ditto -c -k --sequesterRsrc --keepParent "$app" dist/SeraRelay-macOS.zip
 staging="$(mktemp -d)"
 cp -R "$app" "$staging/"
 ln -s /Applications "$staging/Applications"
-hdiutil create -volname "Sera Relay $version" -srcfolder "$staging" -fs HFS+ -format UDZO -ov dist/SeraRelay-macOS.dmg
+# hdiutil on hosted macOS runners intermittently fails with "Resource busy"; retry before giving up.
+for attempt in 1 2 3 4; do
+  hdiutil create -volname "Sera Relay $version" -srcfolder "$staging" -fs HFS+ -format UDZO -ov dist/SeraRelay-macOS.dmg && break
+  [ "$attempt" = 4 ] && exit 1
+  sleep $((attempt * 10))
+done
 rm -rf "$staging"
 shasum -a 256 dist/SeraRelay-macOS.zip dist/SeraRelay-macOS.dmg
