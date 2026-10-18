@@ -27,6 +27,7 @@ const chrome = process.platform === 'win32' ? 'C:/Program Files/Google/Chrome/Ap
       [data-testid="conversation-panel-messages"]{position:fixed;left:30%;right:0;top:60px;bottom:62px;overflow:auto;padding:12px}
       [data-id]{padding:6px 18px}.bubble{display:inline-block;max-width:60%;padding:6px 9px;border-radius:8px;background:#202c33}.out{text-align:right}.out .bubble{background:#005c4b}</style>
       <div id="side"><div id="pane-side"></div></div>
+      <div id="main"><header style="position:fixed;left:30%;right:0;top:0;height:60px;display:flex;justify-content:space-between;align-items:center;background:#202c33"><span>Garden circle</span><span style="width:120px;height:40px"></span></header></div>
       <div data-testid="conversation-panel-messages">
         <div data-id="t1"><span class="bubble">Can we meet Monday about the water tank?</span></div>
         <div data-id="t2"><span class="bubble">Yes, after the school run.</span></div>
@@ -62,8 +63,14 @@ const chrome = process.platform === 'win32' ? 'C:/Program Files/Google/Chrome/Ap
     assert.equal(await page.$eval('[data-id=v1]', e => e.hasAttribute('data-vt-text')), false);
 
     // Select two messages, then shift-select a range that skips the voice note.
+    // The bar sits in the chat header, clear of every message.
+    const header = await page.$eval('#main header', e => { const r = e.getBoundingClientRect(); return { top: r.top, bottom: r.bottom, left: r.left, right: r.right }; });
+    const inHeader = async () => page.$eval('.vt-select', (e, h) => { const r = e.getBoundingClientRect(); return r.top >= h.top - 1 && r.bottom <= h.bottom + 1 && r.left >= h.left - 1 && r.right <= h.right + 1; }, header);
+    assert.equal(await inHeader(), true, 'idle button inside the chat header');
+    assert.equal(await page.$eval('.vt-select', e => { const r = e.getBoundingClientRect(); return [...document.querySelectorAll('[data-id]')].some(m => { const b = m.getBoundingClientRect(); return b.bottom > r.top && b.top < r.bottom && b.right > r.left && b.left < r.right; }); }), false, 'idle button covers no message');
     await page.click('.vt-select button');
     assert.equal(await page.$eval('.vt-select', e => [...e.querySelectorAll('button')].filter(b => !b.hidden).map(b => b.textContent).join('|')), 'Review with Sera|Cancel');
+    assert.equal(await inHeader(), true, 'selection bar fills the chat header');
     assert.equal(await page.$eval('.vt-select .vt-primary', b => b.disabled), true);
     await page.click('[data-id=t1] .bubble');
     assert.equal(await page.evaluate(() => window.__bubbleClicks), 1, 'selection clicks do not reach WhatsApp');
@@ -132,6 +139,7 @@ const chrome = process.platform === 'win32' ? 'C:/Program Files/Google/Chrome/Ap
     await new Promise(r => setTimeout(r, 100));
     const box = await page.$eval('.vt-select', e => { const r = e.getBoundingClientRect(); return { left: r.left, right: r.right }; });
     assert.ok(box.left >= 0 && box.right <= 375, 'selection bar fits a phone-width window');
+    assert.equal(await page.$eval('.vt-select', bar => [...bar.querySelectorAll('button')].filter(b => !b.hidden).every(b => { const r = b.getBoundingClientRect(), o = bar.getBoundingClientRect(); return r.right <= o.right + 1 && r.left >= o.left - 1; })), true, 'every selection button is fully visible');
     await page.screenshot({ path: path.join('build', 'text-inbox-375.png') });
     await page.setViewport({ width: 1280, height: 800 });
     await page.evaluate(() => window.dispatchEvent(new Event('resize')));

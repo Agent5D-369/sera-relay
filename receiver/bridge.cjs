@@ -30,7 +30,8 @@ const client = new Client({
   authStrategy: new LocalAuth({ clientId: 'voice-transcriber', dataPath: path.join(home, 'auth') }),
   userAgent: false,
   webVersionCache: { type: 'none' },
-  puppeteer: { executablePath: browser, headless: !inline,
+  // Without --enable-automation Chrome does not show "Chrome is being controlled by automated test software".
+  puppeteer: { executablePath: browser, headless: !inline, ignoreDefaultArgs: ['--enable-automation'],
     ...(inline ? { args: ['--app=https://web.whatsapp.com/', '--window-size=1150,850'], defaultViewport: null } : {}) },
 });
 // Preserve the library's cache behavior, but contain cache-only response failures.
