@@ -30,7 +30,7 @@ exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name='SeraRelay', debug=Fal
           bootloader_ignore_signals=False, strip=False, upx=False, console=False, icon=icon)
 coll = COLLECT(exe, a.binaries, a.datas, strip=False, upx=False, name='SeraRelay')
 if mac:
-    app = BUNDLE(coll, name='Sera Relay.app', icon=icon, bundle_identifier='com.agent5d.serarelay',
+    app = BUNDLE(coll, name='Sera WhatsApp Relay.app', icon=icon, bundle_identifier='com.agent5d.serarelay',
                  version=VERSION.split('-')[0],
-                 info_plist={'CFBundleDisplayName': 'Sera Relay', 'CFBundleShortVersionString': VERSION,
+                 info_plist={'CFBundleDisplayName': 'Sera WhatsApp Relay', 'CFBundleShortVersionString': VERSION,
                              'LSMinimumSystemVersion': '12.0', 'NSHighResolutionCapable': True})

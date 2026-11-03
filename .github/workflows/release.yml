@@ -62,7 +62,7 @@ jobs:
           $key = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\{2A465F68-4959-4F95-B316-06F5934E1904}_is1'
           if ((Get-ItemProperty -LiteralPath $key).InstallLocation.TrimEnd('\') -ne $dir) { throw 'Setup did not record the chosen folder' }
           foreach ($folder in @([Environment]::GetFolderPath('Programs'), [Environment]::GetFolderPath('Desktop'))) {
-            if (-not (Test-Path (Join-Path $folder 'Sera Relay.lnk'))) { throw "Missing shortcut in $folder" }
+            if (-not (Test-Path (Join-Path $folder 'Sera WhatsApp Relay.lnk'))) { throw "Missing shortcut in $folder" }
           }
           # Prove voice notes decode with no FFmpeg anywhere on PATH.
           $env:PATH = ($env:PATH -split ';' | Where-Object { $_ -and -not (Test-Path (Join-Path $_ 'ffmpeg.exe')) }) -join ';'
@@ -78,7 +78,7 @@ jobs:
           if ($remove.ExitCode) { throw "Uninstall exited with $($remove.ExitCode)" }
           Start-Sleep -Seconds 3
           if (Test-Path $app) { throw 'Uninstall left the app behind' }
-          if (Test-Path (Join-Path ([Environment]::GetFolderPath('Programs')) 'Sera Relay.lnk')) { throw 'Uninstall left the Start menu shortcut' }
+          if (Test-Path (Join-Path ([Environment]::GetFolderPath('Programs')) 'Sera WhatsApp Relay.lnk')) { throw 'Uninstall left the Start menu shortcut' }
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: windows
@@ -123,7 +123,7 @@ jobs:
           python tests/make_voice_note.py build/speech.aiff build/note.ogg
           mkdir -p "$HOME/Applications"
           ditto -x -k dist/SeraRelay-macOS.zip "$HOME/Applications"
-          app="$HOME/Applications/Sera Relay.app"
+          app="$HOME/Applications/Sera WhatsApp Relay.app"
           codesign --verify --deep --strict "$app"
           # Prove voice notes decode with no FFmpeg anywhere on PATH.
           clean_path="$(echo "$PATH" | tr ':' '\n' | while read -r d; do [ -n "$d" ] && [ ! -x "$d/ffmpeg" ] && echo "$d"; done | paste -sd: -)"
@@ -138,7 +138,7 @@ jobs:
           assert result['platform'] == 'darwin', result
           EOF
           hdiutil attach dist/SeraRelay-macOS.dmg -nobrowse -mountpoint /tmp/sera-dmg
-          test -d "/tmp/sera-dmg/Sera Relay.app" && test -L /tmp/sera-dmg/Applications
+          test -d "/tmp/sera-dmg/Sera WhatsApp Relay.app" && test -L /tmp/sera-dmg/Applications
           hdiutil detach /tmp/sera-dmg
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
@@ -174,7 +174,7 @@ jobs:
           cp artifacts/windows/dist/* artifacts/macos/dist/* upload/
           python3 - "$version" <<'EOF'
           import json, os, sys
-          info = {'product': 'Sera Relay', 'version': sys.argv[1], 'repository': os.environ['GITHUB_REPOSITORY'],
+          info = {'product': 'Sera WhatsApp Relay', 'version': sys.argv[1], 'repository': os.environ['GITHUB_REPOSITORY'],
                   'git_sha': os.environ['GITHUB_SHA'], 'unsigned': True,
                   'windows_self_test': json.load(open('artifacts/windows/build/self-test.json')),
                   'macos_self_test': json.load(open('artifacts/macos/build/self-test.json'))}
@@ -183,5 +183,5 @@ jobs:
           (cd upload && sha256sum SeraRelay-* > SHA256SUMS.txt && cat SHA256SUMS.txt)
           gh release create "$tag" upload/* \
             --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --draft \
-            --title "Sera Relay $version for Windows and Mac" \
+            --title "Sera WhatsApp Relay $version for Windows and Mac" \
             --notes-file docs/RELEASE-NOTES.md

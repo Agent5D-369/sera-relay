@@ -1,6 +1,6 @@
 # Code of Conduct
 
-We want participation in Sera Relay to be respectful and useful. Be considerate, discuss ideas on their merits, and welcome people with different experience and backgrounds.
+We want participation in Sera WhatsApp Relay to be respectful and useful. Be considerate, discuss ideas on their merits, and welcome people with different experience and backgrounds.
 
 Harassment, personal attacks, discriminatory language, threats, and deliberate disruption are not acceptable. Follow the same standard in issues, pull requests, and other project spaces.
 

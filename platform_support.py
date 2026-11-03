@@ -5,7 +5,7 @@ from pathlib import Path
 import subprocess
 import sys
 
-VERSION = '2.3.0-beta.2'
+VERSION = '2.4.0-beta.1'
 IS_WINDOWS = sys.platform == 'win32'
 IS_MAC = sys.platform == 'darwin'
 NO_WINDOW = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
@@ -13,7 +13,7 @@ HOME = Path.home() / '.whatsapp-transcriber'
 UI_FONT = 'Segoe UI' if IS_WINDOWS else 'Helvetica Neue' if IS_MAC else 'TkDefaultFont'
 CREDENTIAL_NOTE = ('Stored encrypted for your Windows account.' if IS_WINDOWS else
                    'Stored in your macOS Keychain.' if IS_MAC else 'Stored for your account.')
-KEYCHAIN_SERVICE = 'Sera Relay'
+KEYCHAIN_SERVICE = 'Sera Relay'  # Unchanged by the rename: it holds existing users' Sera tokens.
 KEYCHAIN_ACCOUNT = 'sera-credential'
 KEYCHAIN_MARKER = b'macos-keychain:v1'
 
@@ -28,7 +28,7 @@ def app_base():
         return Path(__file__).resolve().parent
     executable = Path(sys.executable).resolve()
     if IS_MAC:
-        # Sera Relay.app/Contents/MacOS/SeraRelay -> Sera Relay.app/Contents/Resources
+        # Sera WhatsApp Relay.app/Contents/MacOS/SeraRelay -> Sera WhatsApp Relay.app/Contents/Resources
         return executable.parent.parent / 'Resources'
     return executable.parent
 

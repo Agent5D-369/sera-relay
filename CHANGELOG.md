@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.4.0-beta.1
+
+- Renamed to Sera WhatsApp Relay: window title, installer, Start menu and Desktop shortcuts, the Mac app, and the docs. Transcripts, the WhatsApp link and the Sera connection carry over. Download file names and the install folder stay the same so existing installers keep working. Upgrading removes the old Sera Relay shortcuts, and the one-line Mac installer replaces the old Sera Relay app.
+
 ## 2.3.0-beta.2
 
 - Windows setup asks where to install on first install, so the app (about 2 GB) can go on another drive. The one-line installer takes `$env:SERA_RELAY_DIR`. Updates reuse the chosen folder.

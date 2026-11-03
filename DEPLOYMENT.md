@@ -1,4 +1,4 @@
-# Sera Relay deployment and source builds
+# Sera WhatsApp Relay deployment and source builds
 
 ## Installing a release
 
@@ -21,7 +21,7 @@ Node.js, the Whisper `small` model, and the audio decoder (libsndfile with Ogg O
 
 All user data lives in `.whatsapp-transcriber` in your home folder (`%USERPROFILE%` on Windows, `~` on macOS): the WhatsApp link in `auth`, transcripts and queue state in `inbox.sqlite3`, and audio waiting for transcription in `spool`. Installing, updating, and uninstalling never touch this folder. Delete it only when you intend to erase local history and sign-in state.
 
-The Sera token is protected by the operating system: Windows DPAPI for your account (`sera-credential.dpapi`), or the macOS Keychain (service "Sera Relay"; the file then only marks that a credential exists).
+The Sera token is protected by the operating system: Windows DPAPI for your account (`sera-credential.dpapi`), or the macOS Keychain (service "Sera WhatsApp Relay"; the file then only marks that a credential exists).
 
 ## Sera workspace
 
@@ -61,7 +61,7 @@ cd receiver && node --test *.test.cjs && cd ..
 Build:
 
 - Windows: `.\Build-Release.ps1` builds `dist\SeraRelay`, the portable ZIP, and, with [Inno Setup 6](https://jrsoftware.org/isinfo.php) installed, `SeraRelay-Windows-Setup.exe`. Pass `-SkipInstaller` to skip the installer.
-- macOS: `PYTHON=.venv/bin/python bash build-macos.sh` builds `dist/Sera Relay.app`, the DMG, and the ZIP. The app is sealed with an ad hoc signature.
+- macOS: `PYTHON=.venv/bin/python bash build-macos.sh` builds `dist/Sera WhatsApp Relay.app`, the DMG, and the ZIP. The app is sealed with an ad hoc signature.
 
 ## Releasing
 

@@ -31,7 +31,7 @@ from inbox_store import Inbox
 from sera_memory import SeraMemory
 
 BASE = app_base()
-TITLE = "Sera Relay"
+TITLE = "Sera WhatsApp Relay"
 
 
 class AutoApp:
@@ -55,7 +55,7 @@ class AutoApp:
         self.history_chats = {}
         root.title(TITLE)
         try:
-            # The Sera Relay icon in the title bar and taskbar, not Tk's default feather.
+            # The Sera WhatsApp Relay icon in the title bar and taskbar, not Tk's default feather.
             if IS_WINDOWS:
                 root.iconbitmap(str(BASE / 'assets' / 'sera-relay.ico'))
             else:

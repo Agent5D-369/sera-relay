@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping improve Sera Relay. Open an issue to discuss a substantial change before starting work. For small fixes, open a pull request with a clear explanation and steps to reproduce or review them.
+Thanks for helping improve Sera WhatsApp Relay. Open an issue to discuss a substantial change before starting work. For small fixes, open a pull request with a clear explanation and steps to reproduce or review them.
 
 Keep changes focused and describe their user-visible effect. Do not include personal WhatsApp data, transcripts, session files, tokens, or screenshots containing private information. Use synthetic examples in logs and screenshots, and remove credentials and message content from diagnostic details. Update user documentation when behavior or setup changes.
 
