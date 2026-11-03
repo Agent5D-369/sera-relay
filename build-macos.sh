@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build "Sera WhatsApp Relay.app" plus a drag-to-Applications DMG and a ZIP for the one-line installer.
+# Build "Sera Relay.app" plus a drag-to-Applications DMG and a ZIP for the one-line installer.
 # Needs: macOS on Apple Silicon, Python 3.13 with requirements-build.txt, Node.js 24, the Whisper small model.
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -7,7 +7,7 @@ python="${PYTHON:-python3}"
 version="$("$python" -c 'from platform_support import VERSION; print(VERSION)')"
 
 "$python" -m PyInstaller --noconfirm portable.spec
-app="dist/Sera WhatsApp Relay.app"
+app="dist/Sera Relay.app"
 resources="$app/Contents/Resources"
 
 mkdir -p "$resources/receiver"
@@ -36,7 +36,7 @@ cp -R "$app" "$staging/"
 ln -s /Applications "$staging/Applications"
 # hdiutil on hosted macOS runners intermittently fails with "Resource busy"; retry before giving up.
 for attempt in 1 2 3 4; do
-  hdiutil create -volname "Sera WhatsApp Relay $version" -srcfolder "$staging" -fs HFS+ -format UDZO -ov dist/SeraRelay-macOS.dmg && break
+  hdiutil create -volname "Sera Relay $version" -srcfolder "$staging" -fs HFS+ -format UDZO -ov dist/SeraRelay-macOS.dmg && break
   [ "$attempt" = 4 ] && exit 1
   sleep $((attempt * 10))
 done

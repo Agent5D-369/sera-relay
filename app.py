@@ -1,4 +1,4 @@
-"""Sera WhatsApp Relay: Ctrl+Alt+T to start, then stop and transcribe."""
+"""Sera Relay: Ctrl+Alt+T to start, then stop and transcribe."""
 import ctypes
 from ctypes import wintypes
 import logging
@@ -40,7 +40,7 @@ class App:
         self.started_at = 0
         self.hotkey = False
         self.hotkey_thread_id = None
-        root.title("Sera WhatsApp Relay")
+        root.title("Sera Relay")
         root.geometry("620x510")
         root.minsize(500, 400)
         root.configure(bg="#f4f7f5")
@@ -272,7 +272,7 @@ def main():
     if ctypes.get_last_error() == 183:
         user32.FindWindowW.argtypes = [wintypes.LPCWSTR, wintypes.LPCWSTR]
         user32.FindWindowW.restype = wintypes.HWND
-        hwnd = user32.FindWindowW(None, "Sera WhatsApp Relay")
+        hwnd = user32.FindWindowW(None, "Sera Relay")
         if hwnd:
             user32.ShowWindow.argtypes = [wintypes.HWND, ctypes.c_int]
             user32.SetForegroundWindow.argtypes = [wintypes.HWND]
@@ -287,7 +287,7 @@ def main():
         root.mainloop()
     except Exception:
         logging.exception("Application failed")
-        messagebox.showerror("Sera WhatsApp Relay", "The app could not start. Details are in app.log.")
+        messagebox.showerror("Sera Relay", "The app could not start. Details are in app.log.")
     finally:
         if application:
             application.closing.set()

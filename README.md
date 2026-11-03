@@ -1,4 +1,4 @@
-# Sera WhatsApp Relay
+# Sera Relay
 
 Read your WhatsApp voice notes as text, right inside WhatsApp, on your Windows PC or Mac. Speech is transcribed on your own computer. If your team uses Sera, you can turn a voice note or a set of written messages into a reviewed shared memory and follow-up tasks in one step.
 
@@ -16,14 +16,14 @@ Screenshots use fictional demo data.
 
 ## Install
 
-You need Google Chrome or Microsoft Edge installed, and about 2 GB of free space. The download is around 600 MB because the speech model is included, so nothing else needs to be installed. Sera WhatsApp Relay is free and open source. It is a beta and is not yet code-signed, so your computer asks you to confirm the first time. The steps below show exactly what to click.
+You need Google Chrome or Microsoft Edge installed, and about 2 GB of free space. The download is around 600 MB because the speech model is included, so nothing else needs to be installed. Sera Relay is free and open source. It is a beta and is not yet code-signed, so your computer asks you to confirm the first time. The steps below show exactly what to click.
 
 ### Windows 10 or 11 (64-bit)
 
 1. Download **[SeraRelay-Windows-Setup.exe](https://github.com/Agent5D-369/sera-relay/releases/latest/download/SeraRelay-Windows-Setup.exe)** and open it.
 2. If Windows shows "Windows protected your PC", select **More info**, then **Run anyway**.
 3. Choose where to install. The default is your user folder on drive C:. To use another drive, select **Browse** and pick a folder such as `D:\SeraRelay`. Setup shows the space it needs and checks that you can write there. Updates reuse the same folder without asking.
-4. Setup installs for your account only. No administrator password is needed. Sera WhatsApp Relay opens when it finishes, and it is in your Start menu and on your Desktop.
+4. Setup installs for your account only. No administrator password is needed. Sera Relay opens when it finishes, and it is in your Start menu and on your Desktop.
 
 Prefer one line? Open PowerShell and paste:
 
@@ -47,13 +47,13 @@ The easiest way is one line. Open **Terminal** (press Command + Space, type Term
 curl -fsSL https://raw.githubusercontent.com/Agent5D-369/sera-relay/main/install.sh | bash
 ```
 
-It downloads Sera WhatsApp Relay, checks the download, puts it in Applications, and opens it.
+It downloads Sera Relay, checks the download, puts it in Applications, and opens it.
 
 Or use the disk image:
 
-1. Download **[SeraRelay-macOS.dmg](https://github.com/Agent5D-369/sera-relay/releases/latest/download/SeraRelay-macOS.dmg)**, open it, and drag **Sera WhatsApp Relay** to **Applications**.
-2. Open Sera WhatsApp Relay. macOS says it cannot verify the developer. Select **Done**.
-3. Open **System Settings > Privacy & Security**, scroll down, and select **Open Anyway** next to Sera WhatsApp Relay, then confirm (with your Mac password if asked). After that it opens normally.
+1. Download **[SeraRelay-macOS.dmg](https://github.com/Agent5D-369/sera-relay/releases/latest/download/SeraRelay-macOS.dmg)**, open it, and drag **Sera Relay** to **Applications**.
+2. Open Sera Relay. macOS says it cannot verify the developer. Select **Done**.
+3. Open **System Settings > Privacy & Security**, scroll down, and select **Open Anyway** next to Sera Relay, then confirm (with your Mac password if asked). After that it opens normally.
 
 Intel Macs are not supported yet.
 
@@ -63,7 +63,7 @@ Run the installer again, or paste the same one line again. Your transcripts, Wha
 
 ## First use
 
-1. Open Sera WhatsApp Relay. WhatsApp opens in its own window.
+1. Open Sera Relay. WhatsApp opens in its own window.
 2. On your phone, open WhatsApp > **Settings > Linked devices > Link a device**, and scan the QR code. You do this once.
 3. Open any chat. Every voice note gets a panel underneath. New notes are transcribed as they arrive. For older notes, select **Transcribe**.
 
@@ -107,7 +107,7 @@ A forwarded message shows who forwarded it, because WhatsApp does not show the o
 
 Pick one chat where people forward anything worth keeping, such as a small group called "Sera inbox". Open it, then in **Voice notes + Sera** select **Use the open chat as Sera inbox** and confirm.
 
-New messages in that chat are counted in the panel. **Review new inbox messages** opens the chat with them already selected. **Mark as handled** clears messages you do not want to keep, without sending them. Sera WhatsApp Relay only reads this chat; it never posts or replies.
+New messages in that chat are counted in the panel. **Review new inbox messages** opens the chat with them already selected. **Mark as handled** clears messages you do not want to keep, without sending them. Sera Relay only reads this chat; it never posts or replies.
 
 Tell everyone in the inbox chat that what they post may be saved to Sera after review.
 
@@ -129,4 +129,4 @@ Tell everyone in the inbox chat that what they post may be saved to Sera after r
 
 ## Independence
 
-Sera WhatsApp Relay is an unofficial companion. It is not affiliated with or endorsed by WhatsApp or Meta. It uses [whatsapp-web.js](https://github.com/wwebjs/whatsapp-web.js), and WhatsApp changes can affect compatibility. It does not send messages for you.
+Sera Relay is an unofficial companion. It is not affiliated with or endorsed by WhatsApp or Meta. It uses [whatsapp-web.js](https://github.com/wwebjs/whatsapp-web.js), and WhatsApp changes can affect compatibility. It does not send messages for you.

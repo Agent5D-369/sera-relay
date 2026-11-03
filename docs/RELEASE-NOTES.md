@@ -1,4 +1,4 @@
-# Sera WhatsApp Relay 2.4.0-beta.1 for Windows and Mac
+# Sera Relay 2.3.0-beta.2 for Windows and Mac
 
 Read WhatsApp voice notes as text inside WhatsApp, transcribed on your own computer. Optionally publish a reviewed voice note, or a set of written messages, to your Sera workspace with its follow-up tasks in one step.
 
@@ -11,17 +11,16 @@ Chrome or Edge is required. Nothing else: FFmpeg is no longer needed. Updating k
 
 ## New in this release
 
-- **New name: Sera WhatsApp Relay.** Formerly Sera Relay. Updating keeps your transcripts, WhatsApp link and Sera connection. The old Start menu and Desktop shortcuts are replaced, and the one-line Mac installer replaces the old app. If you installed on a Mac from the DMG, drag the old **Sera Relay** app to the Trash after installing.
 - **Send written messages to Sera.** Under an open chat, select **Select messages for Sera**, click the messages you want (Shift-click picks a range), then **Review with Sera**. They go through the same review as a voice note and are saved as copied text with each sender and time. Photo, video and file captions count as text.
 - **Labels on sent messages.** Messages already sent to Sera show a small label that reopens their review.
-- **Sera inbox chat.** Choose one chat that people forward messages into. New messages there are counted in the panel, and one click opens the chat with them selected. **Mark as handled** clears messages without sending them. Sera WhatsApp Relay only reads that chat and never posts.
+- **Sera inbox chat.** Choose one chat that people forward messages into. New messages there are counted in the panel, and one click opens the chat with them selected. **Mark as handled** clears messages without sending them. Sera Relay only reads that chat and never posts.
 - The **Select messages for Sera** button sits between the contact's name and WhatsApp's icons and never covers the photo or name. In a narrow window it shortens to **Sera**.
 - No more warning bars at the top of the WhatsApp window: Chrome's "controlled by automated test software" and "unsupported command-line flag" notices are both gone.
 - A forwarded message shows who forwarded it, because WhatsApp does not show the original author.
 - **Choose the install drive on Windows.** First install asks for a folder, so the app can go on another drive. The one-line installer accepts `$env:SERA_RELAY_DIR = 'D:\SeraRelay'`. Updates reuse the chosen folder.
 - Publishing written messages needs a current Sera workspace. Older Sera servers are refused before anything is sent.
 
-Everything from 2.3 and 2.2 is included: Mac support, the one-file Windows installer, no FFmpeg, note colors, Mark reviewed, the voice-note rail, and one-step publish with tasks.
+Everything from 2.2 is included: Mac support, the one-file Windows installer, no FFmpeg, note colors, Mark reviewed, the voice-note rail, and one-step publish with tasks.
 
 ## Checks
 
