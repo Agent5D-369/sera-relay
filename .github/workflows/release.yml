@@ -52,10 +52,15 @@ jobs:
           $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer
           $synth.SetOutputToWaveFile("$PWD\build\speech.wav"); $synth.Speak($env:SPEECH); $synth.Dispose()
           python tests/make_voice_note.py build\speech.wav build\note.ogg
-          $setup = Start-Process dist\SeraRelay-Windows-Setup.exe -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/TASKS=desktopicon' -Wait -PassThru
+          # Install to a chosen folder on another drive, as a user can on the folder page.
+          $dir = 'D:\SeraRelay Test'
+          $setup = Start-Process dist\SeraRelay-Windows-Setup.exe -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/TASKS=desktopicon',"/DIR=`"$dir`"" -Wait -PassThru
           if ($setup.ExitCode) { throw "Setup exited with $($setup.ExitCode)" }
-          $app = "$env:LOCALAPPDATA\SeraRelay\SeraRelay.exe"
-          if (-not (Test-Path $app)) { throw 'App was not installed' }
+          $app = "$dir\SeraRelay.exe"
+          if (-not (Test-Path $app)) { throw 'App was not installed in the chosen folder' }
+          if (Test-Path "$env:LOCALAPPDATA\SeraRelay\SeraRelay.exe") { throw 'App was installed in the default folder instead' }
+          $key = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\{2A465F68-4959-4F95-B316-06F5934E1904}_is1'
+          if ((Get-ItemProperty -LiteralPath $key).InstallLocation.TrimEnd('\') -ne $dir) { throw 'Setup did not record the chosen folder' }
           foreach ($folder in @([Environment]::GetFolderPath('Programs'), [Environment]::GetFolderPath('Desktop'))) {
             if (-not (Test-Path (Join-Path $folder 'Sera Relay.lnk'))) { throw "Missing shortcut in $folder" }
           }
@@ -69,7 +74,7 @@ jobs:
           if ($result.error) { throw $result.error }
           if ($result.transcript -notmatch 'water report') { throw "Unexpected transcript: $($result.transcript)" }
           if ($result.decoder -notmatch 'libsndfile') { throw 'Decoder check failed' }
-          $remove = Start-Process "$env:LOCALAPPDATA\SeraRelay\unins000.exe" -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
+          $remove = Start-Process "$dir\unins000.exe" -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
           if ($remove.ExitCode) { throw "Uninstall exited with $($remove.ExitCode)" }
           Start-Sleep -Seconds 3
           if (Test-Path $app) { throw 'Uninstall left the app behind' }

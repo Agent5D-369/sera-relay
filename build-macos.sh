@@ -11,12 +11,15 @@ app="dist/Sera Relay.app"
 resources="$app/Contents/Resources"
 
 mkdir -p "$resources/receiver"
-for file in bridge.cjs compat.cjs external.cjs focus.cjs history.cjs incoming.cjs inline.cjs media-compat.cjs review-ui.cjs window.cjs package.json package-lock.json; do
-  cp "receiver/$file" "$resources/receiver/"
+# Every receiver module except tests and browser checks, so a new module cannot be left out.
+for file in receiver/*.cjs receiver/package.json receiver/package-lock.json; do
+  case "$(basename "$file")" in *.test.cjs|verify_*) continue ;; esac
+  cp "$file" "$resources/receiver/"
 done
 node="$(find "$app/Contents" -path '*/runtime/node' -type f | head -n 1)"
 PUPPETEER_SKIP_DOWNLOAD=true "$node" "$(dirname "$(command -v npm)")/../lib/node_modules/npm/bin/npm-cli.js" \
   ci --omit=dev --prefix "$resources/receiver" --ignore-scripts
+"$node" "$resources/receiver/check-package.cjs" "$resources/receiver"
 cp DEPLOYMENT.md LICENSE "$resources/"
 cp -R assets "$resources/"
 mkdir -p "$resources/THIRD-PARTY-NOTICES"
@@ -31,6 +34,11 @@ ditto -c -k --sequesterRsrc --keepParent "$app" dist/SeraRelay-macOS.zip
 staging="$(mktemp -d)"
 cp -R "$app" "$staging/"
 ln -s /Applications "$staging/Applications"
-hdiutil create -volname "Sera Relay $version" -srcfolder "$staging" -fs HFS+ -format UDZO -ov dist/SeraRelay-macOS.dmg
+# hdiutil on hosted macOS runners intermittently fails with "Resource busy"; retry before giving up.
+for attempt in 1 2 3 4; do
+  hdiutil create -volname "Sera Relay $version" -srcfolder "$staging" -fs HFS+ -format UDZO -ov dist/SeraRelay-macOS.dmg && break
+  [ "$attempt" = 4 ] && exit 1
+  sleep $((attempt * 10))
+done
 rm -rf "$staging"
 shasum -a 256 dist/SeraRelay-macOS.zip dist/SeraRelay-macOS.dmg
