@@ -10,6 +10,9 @@ const { installCompatibility } = require('./compat.cjs');
 const { installInline } = require('./inline.cjs');
 const { showWindow } = require('./window.cjs');
 const { startExternal } = require('./external.cjs');
+const { quietLaunch } = require('./launch.cjs');
+// Removes Chrome's unsupported-flag warning bar from the WhatsApp window.
+quietLaunch();
 let external;
 const inline = process.env.WA_TRANSCRIBER_INLINE === '1';
 
