@@ -25,7 +25,7 @@ function installPageInline() {
   .voice-transcriber p{margin:8px 0 12px;white-space:pre-wrap;overflow-wrap:anywhere;user-select:text}.voice-transcriber small{display:block;margin:6px 0;color:var(--vt-muted)}.voice-transcriber a{color:var(--vt-accent);display:inline-block;margin:8px 12px 0 0}.voice-transcriber summary{cursor:pointer;padding:6px 0;font-weight:600}.voice-transcriber .vt-heading{font-size:12px;font-weight:600;letter-spacing:.02em;margin:0 0 10px;color:var(--vt-accent)}
   .vt-rail{position:fixed;z-index:900;width:24px;display:flex;flex-direction:column;align-items:center;gap:4px;font:600 11px/1 system-ui,sans-serif;color:#e9edef}.vt-rail[hidden]{display:none}.vt-rail-track{position:relative;flex:1;width:14px;border-radius:7px;background:rgba(233,237,239,.08)}.vt-rail-band{position:absolute;left:-2px;right:-2px;min-height:6px;border-radius:5px;background:rgba(233,237,239,.16);pointer-events:none}.vt-rail-dot{position:absolute;left:1px;width:12px;height:7px;margin-top:-3px;padding:0;border:2px solid #ffd54f;border-radius:4px;cursor:pointer;background:transparent;box-sizing:border-box}.vt-rail-dot[data-state=transcribed]{background:#ffd54f;border-color:#ffd54f}.vt-rail-dot[data-state=reviewed]{background:#c9a7ff;border-color:#c9a7ff}.vt-rail-dot[data-state=saved]{background:#5ee08a;border-color:#5ee08a}.vt-rail-dot[data-state=attention]{background:#ff8a80;border-color:#ff8a80}.vt-rail-dot:hover,.vt-rail-dot:focus-visible{outline:2px solid #e9edef;outline-offset:1px}.vt-rail button.vt-rail-step{width:24px;height:22px;padding:0;border:1px solid #71858f;border-radius:6px;background:#202c33;color:#e9edef;font:inherit;cursor:pointer}.vt-rail button.vt-rail-step:disabled{opacity:.45;cursor:default}.vt-rail-count{padding:3px 4px;border-radius:6px;background:#202c33}
   .voice-tools{position:fixed;right:16px;bottom:16px;z-index:1000;max-width:calc(100% - 32px);background:var(--vt-bg);border:1px solid var(--vt-line);border-radius:10px;padding:8px 12px}.voice-tools.vt-sidebar{position:static;flex:none;margin:8px 12px;max-width:100%;z-index:auto}.voice-tools summary{cursor:pointer;font-weight:600;white-space:nowrap}.voice-tools p{max-width:260px;margin:10px 0}.voice-tools button{margin-bottom:0}.voice-transcriber[aria-busy=true] .vt-heading{color:var(--vt-muted)}
-  .vt-select{position:fixed;z-index:950;box-sizing:border-box;display:flex;align-items:center;gap:8px;flex-wrap:nowrap;width:max-content}.vt-select.vt-on{background:var(--vt-bg);border-bottom:1px solid var(--vt-line);padding:6px 16px;width:auto;flex-wrap:wrap}.vt-select.vt-low{transform:translateY(-100%);padding:8px 10px;border:1px solid var(--vt-line);border-radius:10px;background:var(--vt-bg)}.vt-select[hidden],.vt-select [hidden]{display:none}.vt-select button{margin:0;flex:none}.vt-select small{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--vt-muted)}.vt-select small:empty{display:none}.vt-select .vt-count{font-weight:600;flex:none}
+  .vt-select{position:fixed;z-index:950;box-sizing:border-box;display:flex;align-items:center;gap:8px;flex-wrap:nowrap;width:max-content}.vt-select.vt-on{background:var(--vt-bg);border-bottom:1px solid var(--vt-line);padding:6px 16px;width:auto;flex-wrap:wrap}.vt-select.vt-low{transform:translateY(-100%);padding:8px 10px;border:1px solid var(--vt-line);border-radius:10px;background:var(--vt-bg)}.vt-select[hidden],.vt-select [hidden]{display:none}.vt-select button{margin:0;flex:none}.vt-select small{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--vt-muted)}.vt-select small:empty{display:none}.vt-select .vt-count{font-weight:600;flex:none}.vt-select.vt-tight .vt-start{font-size:0}.vt-select.vt-tight .vt-start::after{content:'Sera';font-size:13px}.vt-select:not(.vt-on) button:not(.vt-primary){background:var(--vt-bg);box-shadow:0 1px 4px rgba(0,0,0,.35)}
   [data-vt-text].vt-pickable{cursor:pointer;box-shadow:inset 4px 0 rgba(233,237,239,.28)}[data-vt-text].vt-picked{background:rgba(99,222,198,.16);box-shadow:inset 4px 0 #63dec6}
   .vt-text-mark{display:block;margin:2px 12px 6px auto;padding:3px 8px;min-height:0;border:1px solid var(--vt-line);border-radius:12px;background:var(--vt-bg);color:var(--vt-ink);font:600 12px var(--vt-font);cursor:pointer}.vt-text-mark[data-state=transcribed]{border-color:#ffd54f}.vt-text-mark[data-state=reviewed]{border-color:#c9a7ff}.vt-text-mark[data-state=saved]{border-color:#5ee08a;color:#5ee08a}.vt-text-mark[data-state=attention]{border-color:#ff8a80;color:#ff8a80}.vt-text-mark:focus-visible{outline:2px solid var(--vt-accent);outline-offset:2px}
   .voice-tools .vt-inbox{border-top:1px solid var(--vt-line);margin-top:10px;padding-top:4px}.voice-tools .vt-inbox button{margin:0 6px 6px 0}.voice-tools .vt-inbox small{display:block;max-width:260px;color:var(--vt-muted)}
@@ -303,7 +303,7 @@ function installPageInline() {
   function clearText(bubble) { delete bubble.dataset.vtText; bubble.classList.remove('vt-pickable', 'vt-picked'); bubble.querySelector(':scope > .vt-text-mark')?.remove(); }
   const bar = document.createElement('div'); bar.className = 'vt-select'; bar.hidden = true; bar.setAttribute('role', 'toolbar'); bar.setAttribute('aria-label', 'Send written messages to Sera');
   const barButton = (text, action, primary) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = text; if (primary) b.className = 'vt-primary'; b.addEventListener('click', event => { event.stopPropagation(); void action(); }); return b; };
-  const startPick = barButton('Select messages for Sera', () => startSelecting(railChat));
+  const startPick = barButton('Select messages for Sera', () => startSelecting(railChat)); startPick.title = 'Select messages for Sera'; startPick.classList.add('vt-start');
   const pickCount = document.createElement('span'); pickCount.className = 'vt-count'; pickCount.setAttribute('aria-live', 'polite');
   const reviewPick = barButton('Review with Sera', reviewSelection, true);
   const dismissPick = barButton('Mark as handled', dismissSelection);
@@ -314,7 +314,12 @@ function installPageInline() {
   paintBar();
   function chatId(chat) { return chat?.id?._serialized || (chat?.id ? String(chat.id) : ''); }
   function startSelecting(chat) { if (!chat) return; selecting = chat; picked.clear(); anchor = null; pickNote.textContent = 'Select the messages to send. Shift-select picks a range.'; paintBar(); scan(); }
-  function stopSelecting(note = '') { selecting = null; picked.clear(); anchor = null; pickNote.textContent = note; paintBar(); }
+  let noteTimer = 0;
+  function stopSelecting(note = '') {
+    selecting = null; picked.clear(); anchor = null; pickNote.textContent = note; paintBar();
+    // A result note is feedback, not a fixture: clear it after a while so the idle button stays small.
+    clearTimeout(noteTimer); if (note) noteTimer = setTimeout(() => { if (!selecting && pickNote.textContent === note) { pickNote.textContent = ''; positionBar(); } }, 8000);
+  }
   function paintBar() {
     const on = !!selecting, inInbox = on && !!inboxState && chatId(selecting) === inboxState.chat;
     startPick.hidden = on; pickCount.hidden = reviewPick.hidden = cancelPick.hidden = !on; dismissPick.hidden = !inInbox;
@@ -333,6 +338,8 @@ function installPageInline() {
   // header icons, and while selecting it fills the header, the way WhatsApp's own selection mode does.
   function positionBar(scroller = railScroller) {
     if (bar.hidden || !scroller) return;
+    // Class and hidden changes only: changing text here would wake the page observer and loop.
+    pickNote.hidden = false; bar.classList.remove('vt-tight');
     const header = document.querySelector('#main header') || document.querySelector('[data-testid="conversation-header"]');
     const box = header?.getBoundingClientRect();
     bar.classList.toggle('vt-on', !!selecting && !!box);
@@ -345,9 +352,44 @@ function installPageInline() {
     }
     // In a narrow window the bar grows below the header rather than cutting off its buttons.
     if (selecting) { Object.assign(bar.style, { left: box.left + 'px', top: box.top + 'px', width: box.width + 'px', height: '', minHeight: box.height + 'px' }); return; }
-    const icons = header.lastElementChild?.getBoundingClientRect();
-    const edge = icons && icons.width > 0 && icons.width < box.width / 2 ? icons.left : box.right - 170;
-    Object.assign(bar.style, { width: '', height: '', minHeight: '', top: (box.top + (box.height - bar.offsetHeight) / 2) + 'px', left: Math.max(box.left + 8, edge - bar.offsetWidth - 8) + 'px' });
+    // Measure what WhatsApp actually draws in the header: the icons on the right, the photo, name and
+    // status on the left. The button goes in the free space between them, never over the name.
+    const { iconsLeft, titleRight } = headerSpace(header, box);
+    const fits = () => iconsLeft - bar.offsetWidth - 8 >= titleRight + 8;
+    // Try the full label, then a short one, then drop the result note, before leaving the header.
+    if (!fits()) bar.classList.add('vt-tight');
+    if (!fits() && pickNote.textContent) pickNote.hidden = true;
+    bar.classList.toggle('vt-below', !fits());
+    if (!fits()) {
+      // Too narrow to share the header: hang just under it on the right, still clear of the name.
+      Object.assign(bar.style, { width: '', height: '', minHeight: '', top: (box.bottom + 6) + 'px', left: Math.max(box.left + 8, box.right - bar.offsetWidth - 16) + 'px' });
+      return;
+    }
+    Object.assign(bar.style, { width: '', height: '', minHeight: '', top: (box.top + (box.height - bar.offsetHeight) / 2) + 'px', left: (iconsLeft - bar.offsetWidth - 8) + 'px' });
+  }
+  function headerSpace(header, box) {
+    const mid = box.left + box.width / 2;
+    let iconsLeft = box.right - 8, titleRight = box.left;
+    const seen = r => r.width > 0 && r.height > 0 && r.bottom > box.top && r.top < box.bottom;
+    // Icons: clickable things that start in the right half of the header.
+    for (const el of header.querySelectorAll('button,[role=button],[data-icon],svg')) {
+      const r = el.getBoundingClientRect();
+      if (seen(r) && r.left >= mid) iconsLeft = Math.min(iconsLeft, r.left);
+    }
+    // Name, status and photo: the drawn extent of text and images, not their (often full-width) boxes.
+    const range = document.createRange();
+    const walker = document.createTreeWalker(header, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      if (!node.textContent.trim()) continue;
+      range.selectNodeContents(node);
+      const r = range.getBoundingClientRect();
+      if (seen(r) && r.left < mid) titleRight = Math.max(titleRight, r.right);
+    }
+    for (const img of header.querySelectorAll('img')) {
+      const r = img.getBoundingClientRect();
+      if (seen(r) && r.left < mid) titleRight = Math.max(titleRight, r.right);
+    }
+    return { iconsLeft, titleRight: Math.min(titleRight, iconsLeft) };
   }
   function pick(event) {
     if (!selecting || event.target.closest('.vt-select,.voice-transcriber,.vt-text-mark,.voice-tools,.vt-rail,dialog,a')) return;
@@ -436,7 +478,7 @@ function installPageInline() {
     const fresh = inboxState?.pending?.length || 0;
     toolsTitle.textContent = 'Voice notes + Sera' + (pending > 0 ? ' \u00b7 ' + pending + ' to review' : '') + (fresh ? ' \u00b7 ' + fresh + ' new in inbox' : '');
     paintInbox(); paintBar();
-  }, scan, dispose() { document.removeEventListener('click', recordClick, true); document.removeEventListener('click', pick, true); bar.remove(); for (const row of document.querySelectorAll('[data-vt-text]')) clearText(row); observer.disconnect(); clearTimeout(timer); for (const panel of panels.values()) panel.remove(); style.remove(); tools.remove(); rail.remove(); railScroller?.removeEventListener('scroll', scheduleBand); window.removeEventListener('resize', scheduleRail); window.VoiceReview?.dispose(); delete window.VoiceTranscriber; } };
+  }, scan, dispose() { document.removeEventListener('click', recordClick, true); document.removeEventListener('click', pick, true); bar.remove(); for (const row of document.querySelectorAll('[data-vt-text]')) clearText(row); observer.disconnect(); clearTimeout(timer); clearTimeout(noteTimer); for (const panel of panels.values()) panel.remove(); style.remove(); tools.remove(); rail.remove(); railScroller?.removeEventListener('scroll', scheduleBand); window.removeEventListener('resize', scheduleRail); window.VoiceReview?.dispose(); delete window.VoiceTranscriber; } };
   let timer;
   const observer = new MutationObserver(() => { clearTimeout(timer); timer = setTimeout(scan, 150); });
   observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-id'] });

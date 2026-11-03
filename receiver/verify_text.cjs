@@ -27,7 +27,7 @@ const chrome = process.platform === 'win32' ? 'C:/Program Files/Google/Chrome/Ap
       [data-testid="conversation-panel-messages"]{position:fixed;left:30%;right:0;top:60px;bottom:62px;overflow:auto;padding:12px}
       [data-id]{padding:6px 18px}.bubble{display:inline-block;max-width:60%;padding:6px 9px;border-radius:8px;background:#202c33}.out{text-align:right}.out .bubble{background:#005c4b}</style>
       <div id="side"><div id="pane-side"></div></div>
-      <div id="main"><header style="position:fixed;left:30%;right:0;top:0;height:60px;display:flex;justify-content:space-between;align-items:center;background:#202c33"><span>Garden circle</span><span style="width:120px;height:40px"></span></header></div>
+      <div id="main"><header style="position:fixed;left:30%;right:0;top:0;height:60px;display:flex;justify-content:space-between;align-items:center;background:#202c33"><img alt="" style="width:40px;height:40px;margin-left:16px;background:#555"><div id="hd-title" role="button" style="flex:1;padding-left:12px"><div>Garden circle</div><small>online</small></div><div style="display:flex;gap:16px;padding-right:16px"><span role="button" style="width:40px;height:40px"></span><span role="button" style="width:40px;height:40px"></span></div><span style="position:absolute;left:4px;top:4px;width:2px;height:2px"></span></header></div>
       <div data-testid="conversation-panel-messages">
         <div data-id="t1"><span class="bubble">Can we meet Monday about the water tank?</span></div>
         <div data-id="t2"><span class="bubble">Yes, after the school run.</span></div>
@@ -67,6 +67,8 @@ const chrome = process.platform === 'win32' ? 'C:/Program Files/Google/Chrome/Ap
     const header = await page.$eval('#main header', e => { const r = e.getBoundingClientRect(); return { top: r.top, bottom: r.bottom, left: r.left, right: r.right }; });
     const inHeader = async () => page.$eval('.vt-select', (e, h) => { const r = e.getBoundingClientRect(); return r.top >= h.top - 1 && r.bottom <= h.bottom + 1 && r.left >= h.left - 1 && r.right <= h.right + 1; }, header);
     assert.equal(await inHeader(), true, 'idle button inside the chat header');
+    const clearOfName = async () => page.evaluate(() => { const r = document.querySelector('.vt-select').getBoundingClientRect(), range = document.createRange(); range.selectNodeContents(document.querySelector('#hd-title div').firstChild); const t = range.getBoundingClientRect(), i = document.querySelector('#main header img').getBoundingClientRect(); const hit = b => b.right > r.left && b.left < r.right && b.bottom > r.top && b.top < r.bottom; return !hit(t) && !hit(i); });
+    assert.equal(await clearOfName(), true, 'idle button leaves the photo and name readable');
     assert.equal(await page.$eval('.vt-select', e => { const r = e.getBoundingClientRect(); return [...document.querySelectorAll('[data-id]')].some(m => { const b = m.getBoundingClientRect(); return b.bottom > r.top && b.top < r.bottom && b.right > r.left && b.left < r.right; }); }), false, 'idle button covers no message');
     await page.click('.vt-select button');
     assert.equal(await page.$eval('.vt-select', e => [...e.querySelectorAll('button')].filter(b => !b.hidden).map(b => b.textContent).join('|')), 'Review with Sera|Cancel');
@@ -151,6 +153,18 @@ const chrome = process.platform === 'win32' ? 'C:/Program Files/Google/Chrome/Ap
     await page.click('.voice-tools summary');
     await page.evaluate(() => [...document.querySelectorAll('.vt-inbox button')].find(b => b.textContent === 'Stop using as inbox').click());
     assert.equal(inboxCleared, 1);
+
+    // A narrow window: the button still never sits on the photo or name.
+    for (const width of [900, 640, 480]) {
+      await page.setViewport({ width, height: 760 });
+      await page.evaluate(() => window.dispatchEvent(new Event('resize')));
+      await new Promise(r => setTimeout(r, 100));
+      assert.equal(await clearOfName(), true, `idle button leaves the photo and name readable at ${width}px`);
+    }
+    // Placing the button never rewrites its text, which would wake the page observer in a loop.
+    assert.equal(await page.evaluate(() => new Promise(done => { let n = 0; const o = new MutationObserver(list => { n += list.length; }); o.observe(document.querySelector('.vt-select'), { childList: true, subtree: true, characterData: true }); setTimeout(() => { o.disconnect(); done(n); }, 600); })), 0, 'the idle bar settles');
+    await page.screenshot({ path: path.join('build', 'text-idle-480.png') });
+    await page.setViewport({ width: 1280, height: 800 });
 
     await page.evaluate(() => window.VoiceTranscriber.dispose());
     assert.equal(await page.$$eval('.vt-select,.vt-text-mark,.voice-tools', es => es.length), 0);
