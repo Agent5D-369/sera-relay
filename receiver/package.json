@@ -4,6 +4,6 @@
   "private": true,
   "description": "Receive voice notes for local transcription. No sending functionality.",
   "scripts": { "test": "node --test receiver.test.cjs history.test.cjs compat.test.cjs text.test.cjs launch.test.cjs" },
-  "dependencies": { "whatsapp-web.js": "1.34.7" },
+  "dependencies": { "whatsapp-web.js": "1.34.8" },
   "overrides": { "puppeteer": "25.12.0" }
 }
