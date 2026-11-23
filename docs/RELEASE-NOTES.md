@@ -1,4 +1,4 @@
-# Sera Relay 2.3.0-beta.2 for Windows and Mac
+# Sera Relay 2.3.0-beta.3 for Windows and Mac
 
 Read WhatsApp voice notes as text inside WhatsApp, transcribed on your own computer. Optionally publish a reviewed voice note, or a set of written messages, to your Sera workspace with its follow-up tasks in one step.
 
@@ -10,6 +10,11 @@ Read WhatsApp voice notes as text inside WhatsApp, transcribed on your own compu
 Chrome or Edge is required. Nothing else: FFmpeg is no longer needed. Updating keeps your transcripts, WhatsApp link, and Sera connection.
 
 ## New in this release
+
+- **Recovers from a damaged WhatsApp link.** If WhatsApp shows "A database error occurred" for the saved link, Sera Relay now says the link is damaged and shows **Reset link**. It moves the old link aside, shows a new QR code, and keeps your transcripts and Sera connection. Before, the app said "Check your connection", which Reconnect could not fix.
+- The setup step after linking retries once on its own, so a slow first sync no longer needs Reconnect.
+
+## From 2.3.0-beta.2
 
 - **Send written messages to Sera.** Under an open chat, select **Select messages for Sera**, click the messages you want (Shift-click picks a range), then **Review with Sera**. They go through the same review as a voice note and are saved as copied text with each sender and time. Photo, video and file captions count as text.
 - **Labels on sent messages.** Messages already sent to Sera show a small label that reopens their review.
@@ -24,6 +29,6 @@ Everything from 2.2 is included: Mac support, the one-file Windows installer, no
 
 ## Checks
 
-Python and receiver test suites run on Windows and macOS in CI. Each installer was installed on a clean GitHub runner and transcribed a synthetic voice note with FFmpeg removed from `PATH`; the Windows installer was also uninstalled. Results are in `BUILD-INFO.json`. A full interactive WhatsApp linking test on a fresh machine is still a manual step. Not code-signed.
+Python and receiver test suites run on Windows and macOS in CI. Each installer was installed on a clean GitHub runner and transcribed a synthetic voice note with FFmpeg removed from `PATH`; the Windows installer was also uninstalled. Results are in `BUILD-INFO.json`. A full interactive WhatsApp linking test on a fresh machine is still a manual step. The damaged-link message was checked on Windows against a real damaged link; moving the link aside is covered by unit tests. Not code-signed.
 
 Unofficial companion, not affiliated with WhatsApp or Meta. Upstream changes can affect compatibility.

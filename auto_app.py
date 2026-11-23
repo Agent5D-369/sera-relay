@@ -107,6 +107,8 @@ class AutoApp:
         self.history_button.pack(side="left", padx=8)
         self.reconnect_button = ttk.Button(buttons, text="Reconnect", command=self.reconnect)
         self.reconnect_button.pack(side="right")
+        # Shown only when WhatsApp reports the saved link is damaged.
+        self.reset_button = ttk.Button(buttons, text="Reset link", command=self.reset_link)
         ttk.Label(frame, text="Closing exits the receiver. Minimize it to keep listening.").pack(anchor="w", pady=(10, 0))
         self.refresh()
         self.report("Connecting to WhatsApp...")
@@ -433,6 +435,38 @@ class AutoApp:
                 self.start_receiver()
         threading.Thread(target=restart, daemon=True).start()
 
+    def move_damaged_link(self):
+        """Move the saved WhatsApp link aside (never delete it) so the next start shows a new QR code."""
+        auth = self.inbox.home / "auth"
+        if not auth.exists():
+            return None
+        target = self.inbox.home / ("auth-reset-" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+        for attempt in range(10):
+            try:
+                auth.rename(target)
+                return target
+            except PermissionError:
+                # Chrome can hold profile files for a moment after it exits.
+                if attempt == 9:
+                    raise
+                time.sleep(1)
+
+    def reset_link(self):
+        self.reset_button.pack_forget()
+        self.reconnect_button.configure(state="disabled")
+        self.report("Resetting the WhatsApp link...")
+        def restart():
+            self.stop_receiver()
+            try:
+                self.move_damaged_link()
+            except OSError:
+                self.events.put({"type": "status", "status": "The saved link is still in use. Close Sera Relay, reopen it, and select Reset link."})
+                return
+            if not self.closing.is_set():
+                self.events.put({"type": "reconnecting"})
+                self.start_receiver()
+        threading.Thread(target=restart, daemon=True).start()
+
     def open_history(self):
         if self.history_window and self.history_window.winfo_exists():
             self.history_window.lift()
@@ -567,6 +601,7 @@ class AutoApp:
                 self.qr_image = ImageTk.PhotoImage(image)
                 self.qr_label.configure(image=self.qr_image)
                 self.qr_frame.pack(before=self.list_frame, fill="x", pady=10)
+                self.reset_button.pack_forget()
                 self.reconnect_button.configure(state="normal")
             elif kind == "ready":
                 self.inline_sent.clear()
@@ -577,6 +612,7 @@ class AutoApp:
                 self.qr_label.configure(image="")
                 self.qr_image = None
                 self.report("Connected. Listening for new received voice notes.")
+                self.reset_button.pack_forget()
                 self.reconnect_button.configure(state="normal")
                 self.inline_states()
                 self.inbox_config()
@@ -591,6 +627,10 @@ class AutoApp:
                 if event.get("detail"):
                     self.last_receiver_error = event["status"]
                     (self.inbox.home / 'receiver-error.txt').write_text(event['detail'], encoding='utf-8')
+                if event.get("reset"):
+                    self.reset_button.pack(side="right", padx=8)
+                    if self.inline:
+                        self.root.deiconify()
                 self.reconnect_button.configure(state="normal")
             elif kind == "model_ready":
                 self.model_status.set("Local speech model ready. Language is detected automatically.")
