@@ -103,7 +103,9 @@ const inbox = new InboxWatch(client, emit);
 client.on('authenticated', () => emit({ type: 'status', status: 'Linked. Syncing WhatsApp...' }));
 client.on('ready', async () => {
   try {
-    await installCompatibility(client);
+    // The first sync after linking can still be settling; one short retry covers it.
+    try { await installCompatibility(client); }
+    catch { await new Promise(resolve => setTimeout(resolve, 3000)); await installCompatibility(client); }
     if (inline) {
       if (!external) {
         const session = await client.pupBrowser.target().createCDPSession();
@@ -115,8 +117,8 @@ client.on('ready', async () => {
       client.pupBrowser.once('disconnected', () => { emit({ type: 'window_closed' }); void shutdown(); });
     }
     emit({ type: 'ready' });
-  } catch {
-    emit({ type: 'status', status: 'WhatsApp compatibility setup failed. Select Reconnect.' });
+  } catch (error) {
+    emit({ type: 'status', status: 'WhatsApp compatibility setup failed. Select Reconnect.', detail: String(error?.stack || error).slice(0, 3000) });
   }
 });
 client.on('auth_failure', () => emit({ type: 'status', status: 'Linking failed. Reconnect and scan the new QR code.' }));
@@ -168,6 +170,20 @@ readline.createInterface({ input: process.stdin }).on('line', async line => {
 process.on('SIGTERM', shutdown);
 process.on('SIGINT', shutdown);
 process.stdin.on('end', shutdown);
+// WhatsApp shows this page when the saved link's browser storage is damaged. Reconnect cannot fix it; only a new link can.
+const DAMAGED = 'The saved WhatsApp link on this computer is damaged. Select Reset link, then scan the new QR code.';
+async function linkDamaged() {
+  try {
+    return await client.pupPage.evaluate(() => {
+      if (/database error occurred/i.test(document.body?.innerText || '')) return true;
+      // Language-independent signal: WhatsApp loaded, but its connection never started and no login or inbox screen appeared.
+      if (!window.Debug?.VERSION || document.querySelector('canvas') || document.querySelector('#pane-side')) return false;
+      let state = null;
+      try { state = window.require('WAWebSocketModel')?.Socket?.state ?? null; } catch { /* module missing */ }
+      return state === null || state === 'UNLAUNCHED';
+    });
+  } catch { return false; }
+}
 async function connect(attempt = 0) {
   try {
     await client.initialize();
@@ -180,7 +196,12 @@ async function connect(attempt = 0) {
       if (!closing) return connect(attempt + 1);
       return;
     }
-    emit({ type: 'status', status: 'Could not connect to WhatsApp. Check your connection and select Reconnect.', detail: String(error.stack || error).slice(0, 3000) });
+    const detail = String(error.stack || error).slice(0, 3000);
+    if (await linkDamaged()) {
+      emit({ type: 'status', status: DAMAGED, reset: true, detail });
+    } else {
+      emit({ type: 'status', status: 'Could not connect to WhatsApp. Check your connection and select Reconnect.', detail });
+    }
     void shutdown();
   }
 }

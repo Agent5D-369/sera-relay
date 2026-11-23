@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.3.0-beta.3
+
+- When WhatsApp reports that the saved link on a computer is damaged, Sera Relay now says so and shows a **Reset link** button, instead of "Check your connection". Reset link moves the old link aside (it is never deleted) and shows a new QR code. Transcripts, queue and Sera connection are kept.
+- The setup step after linking retries once on its own, so a slow first sync no longer needs Reconnect.
+- If that setup step still fails, the reason is saved to `receiver-error.txt` for support.
+
 ## 2.3.0-beta.2
 
 - Windows setup asks where to install on first install, so the app (about 2 GB) can go on another drive. The one-line installer takes `$env:SERA_RELAY_DIR`. Updates reuse the chosen folder.
