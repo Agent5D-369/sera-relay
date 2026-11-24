@@ -59,9 +59,10 @@ client.inject = async () => {
     try {
       // Debug.VERSION is available before WhatsApp has initialized its stores.
       // Wait for the actual login or inbox screen before loading internal modules.
+      // A first sync after linking can take minutes on large accounts before the inbox appears.
       await client.pupPage.waitForFunction(
         () => !!document.querySelector('canvas') || !!document.querySelector('#pane-side'),
-        { timeout: 60000 },
+        { timeout: 180000 },
       );
       if (!await client.pupPage.evaluate(() => typeof window.onNativeVoiceQR === 'function')) {
         await client.pupPage.exposeFunction('onNativeVoiceQR', qr => emit({ type: 'qr', qr }));
@@ -80,6 +81,23 @@ client.inject = async () => {
         window.__voiceQRObserver.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-ref'] });
         refresh();
       });
+      // Since WhatsApp Web 2.3000.1055852612 a logged-out browser lands on /login/, which has no
+      // WAWebSocketModel, so the library's inject() fails there (wwebjs/whatsapp-web.js#201988).
+      // The QR is already forwarded from the page above. Keep the page open; after the phone
+      // scans, WhatsApp navigates to "/", and the library's framenavigated handler calls this again.
+      if (await client.pupPage.evaluate(() => location.pathname.startsWith('/login'))) {
+        await client.pupPage.evaluate(() => {
+          if (window.__voiceQRRefresh) return;
+          // The QR stops rotating after a few minutes. Ask for a new one instead of leaving a dead code.
+          window.__voiceQRRefresh = setInterval(() => {
+            try {
+              const bus = window.require?.('WAWebBackendEventBus')?.BackendEventBus;
+              if (bus?.socketState === 'UNPAIRED_IDLE') bus.triggerRefreshQR();
+            } catch { /* the login bundle changed; the user can still select the reload button */ }
+          }, 5000);
+        });
+        return;
+      }
       await inject();
       // A restored session may have synced before the library registered its hook.
       await client.pupPage.evaluate(async () => {
@@ -176,6 +194,8 @@ async function linkDamaged() {
   try {
     return await client.pupPage.evaluate(() => {
       if (/database error occurred/i.test(document.body?.innerText || '')) return true;
+      // The /login page never has WAWebSocketModel, so the signal below does not apply there.
+      if (location.pathname.startsWith('/login')) return false;
       // Language-independent signal: WhatsApp loaded, but its connection never started and no login or inbox screen appeared.
       if (!window.Debug?.VERSION || document.querySelector('canvas') || document.querySelector('#pane-side')) return false;
       let state = null;
