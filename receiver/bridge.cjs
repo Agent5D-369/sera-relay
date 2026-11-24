@@ -53,15 +53,31 @@ client.initWebVersionCache = async () => {
   try { await initCache(); } finally { page.on = originalOn; }
 };
 const inject = client.inject.bind(client);
-client.inject = async () => {
+// After a scan on /login, WhatsApp navigates more than once, and the library calls inject() for
+// each navigation. Two overlapping runs both register the same page bindings and the second one
+// crashes ("Failed to add page binding"). Run one at a time. A call that arrives mid-run gets one
+// follow-up run afterwards, in case it came from a navigation the current run did not see.
+let injecting = null;
+let injectAgain = false;
+client.inject = () => {
+  if (injecting) { injectAgain = true; return injecting; }
+  injecting = (async () => {
+    try {
+      do { injectAgain = false; await runInject(); } while (injectAgain && !closing);
+    } finally { injecting = null; }
+  })();
+  return injecting;
+};
+const runInject = async () => {
   if (inline) await showWindow(client.pupBrowser);
   for (let attempt = 0; ; attempt++) {
     try {
       // Debug.VERSION is available before WhatsApp has initialized its stores.
       // Wait for the actual login or inbox screen before loading internal modules.
+      // A first sync after linking can take minutes on large accounts before the inbox appears.
       await client.pupPage.waitForFunction(
         () => !!document.querySelector('canvas') || !!document.querySelector('#pane-side'),
-        { timeout: 60000 },
+        { timeout: 180000 },
       );
       if (!await client.pupPage.evaluate(() => typeof window.onNativeVoiceQR === 'function')) {
         await client.pupPage.exposeFunction('onNativeVoiceQR', qr => emit({ type: 'qr', qr }));
@@ -80,6 +96,23 @@ client.inject = async () => {
         window.__voiceQRObserver.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-ref'] });
         refresh();
       });
+      // Since WhatsApp Web 2.3000.1055852612 a logged-out browser lands on /login/, which has no
+      // WAWebSocketModel, so the library's inject() fails there (wwebjs/whatsapp-web.js#201988).
+      // The QR is already forwarded from the page above. Keep the page open; after the phone
+      // scans, WhatsApp navigates to "/", and the library's framenavigated handler calls this again.
+      if (await client.pupPage.evaluate(() => location.pathname.startsWith('/login'))) {
+        await client.pupPage.evaluate(() => {
+          if (window.__voiceQRRefresh) return;
+          // The QR stops rotating after a few minutes. Ask for a new one instead of leaving a dead code.
+          window.__voiceQRRefresh = setInterval(() => {
+            try {
+              const bus = window.require?.('WAWebBackendEventBus')?.BackendEventBus;
+              if (bus?.socketState === 'UNPAIRED_IDLE') bus.triggerRefreshQR();
+            } catch { /* the login bundle changed; the user can still select the reload button */ }
+          }, 5000);
+        });
+        return;
+      }
       await inject();
       // A restored session may have synced before the library registered its hook.
       await client.pupPage.evaluate(async () => {
@@ -167,6 +200,12 @@ readline.createInterface({ input: process.stdin }).on('line', async line => {
     }
   } catch { emit({ type: 'status', status: 'The request failed. Reconnect and try again.' }); }
 });
+// The library runs inject() from a navigation listener, where an error would otherwise end the
+// receiver and leave a dead QR on screen. Report it instead and stay running.
+process.on('unhandledRejection', error => {
+  if (closing) return;
+  emit({ type: 'status', status: 'WhatsApp hit a setup error. If it does not connect, select Reconnect.', detail: String(error?.stack || error).slice(0, 3000) });
+});
 process.on('SIGTERM', shutdown);
 process.on('SIGINT', shutdown);
 process.stdin.on('end', shutdown);
@@ -176,6 +215,8 @@ async function linkDamaged() {
   try {
     return await client.pupPage.evaluate(() => {
       if (/database error occurred/i.test(document.body?.innerText || '')) return true;
+      // The /login page never has WAWebSocketModel, so the signal below does not apply there.
+      if (location.pathname.startsWith('/login')) return false;
       // Language-independent signal: WhatsApp loaded, but its connection never started and no login or inbox screen appeared.
       if (!window.Debug?.VERSION || document.querySelector('canvas') || document.querySelector('#pane-side')) return false;
       let state = null;

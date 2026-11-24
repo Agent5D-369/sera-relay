@@ -644,6 +644,10 @@ class AutoApp:
             elif kind == "receiver_exit" and event["process"] is self.receiver:
                 if event.get('diagnostic'):
                     (self.inbox.home / 'receiver-error.txt').write_text(event['diagnostic'], encoding='utf-8')
+                # The QR belonged to the browser that just closed. Scanning it can only fail.
+                self.qr_frame.pack_forget()
+                self.qr_label.configure(image="")
+                self.qr_image = None
                 self.report(self.last_receiver_error or "Receiver stopped. Select Reconnect.")
                 self.reconnect_button.configure(state="normal")
                 if self.inline and not self.closing.is_set():
