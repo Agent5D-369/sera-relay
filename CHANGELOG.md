@@ -1,7 +1,10 @@
 # Changelog
 
-## Unreleased
+## 2.3.0-beta.4
 
+- New installs can link WhatsApp again. Since WhatsApp's mid-November update, a computer that is not linked yet opens a new login page, and Sera Relay closed about 7 seconds after showing the QR code. Phones then said "Can't link new devices right now" or "Check your connection". Sera Relay now stays open on that page, refreshes the QR code when it expires, and finishes setup after the scan. Computers that were already linked were not affected.
+- The app hides the QR code whenever WhatsApp stops, so nobody can scan a code that no longer works.
+- Setup runs once at a time when WhatsApp reloads the page several times after a scan, and a setup error is reported instead of closing the app.
 - Security: Pillow 12.3.0 to 13.0.0, which fixes the open Pillow advisories (5 critical). Sera Relay only opens images it creates itself (the QR code), so no installed copy was exposed in practice.
 
 ## 2.3.0-beta.3
