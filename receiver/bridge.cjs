@@ -53,7 +53,22 @@ client.initWebVersionCache = async () => {
   try { await initCache(); } finally { page.on = originalOn; }
 };
 const inject = client.inject.bind(client);
-client.inject = async () => {
+// After a scan on /login, WhatsApp navigates more than once, and the library calls inject() for
+// each navigation. Two overlapping runs both register the same page bindings and the second one
+// crashes ("Failed to add page binding"). Run one at a time. A call that arrives mid-run gets one
+// follow-up run afterwards, in case it came from a navigation the current run did not see.
+let injecting = null;
+let injectAgain = false;
+client.inject = () => {
+  if (injecting) { injectAgain = true; return injecting; }
+  injecting = (async () => {
+    try {
+      do { injectAgain = false; await runInject(); } while (injectAgain && !closing);
+    } finally { injecting = null; }
+  })();
+  return injecting;
+};
+const runInject = async () => {
   if (inline) await showWindow(client.pupBrowser);
   for (let attempt = 0; ; attempt++) {
     try {
@@ -184,6 +199,12 @@ readline.createInterface({ input: process.stdin }).on('line', async line => {
       else emit({ type: 'download_error', id: command.id, error: 'This voice note is no longer available in the linked session.' });
     }
   } catch { emit({ type: 'status', status: 'The request failed. Reconnect and try again.' }); }
+});
+// The library runs inject() from a navigation listener, where an error would otherwise end the
+// receiver and leave a dead QR on screen. Report it instead and stay running.
+process.on('unhandledRejection', error => {
+  if (closing) return;
+  emit({ type: 'status', status: 'WhatsApp hit a setup error. If it does not connect, select Reconnect.', detail: String(error?.stack || error).slice(0, 3000) });
 });
 process.on('SIGTERM', shutdown);
 process.on('SIGINT', shutdown);
